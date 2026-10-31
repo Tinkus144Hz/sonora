@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- A song's right-click menu groups Artist, Album, Radio and Details under one Go to submenu.
+
 ## [0.46.0] - 2026-10-31
 
 ### Added
