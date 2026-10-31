@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Dragging the volume slider no longer stutters or spikes CPU and GPU use
+
 ## [0.46.0] - 2026-10-31
 
 ### Added
