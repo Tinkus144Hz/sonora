@@ -314,6 +314,29 @@ devices-jam-invite-detail = { $count ->
 devices-jam-invite-join = Присоединиться
 devices-elsewhere-banner = Играет на { $device }
 devices-elsewhere-here = Играть здесь
+player-listen-together = Слушать вместе
+devices-session-start = Начать сессию
+devices-session-join = Присоединиться к сессии…
+devices-session-join-title = Присоединиться к сессии
+devices-session-join-detail = Введите код, которым с вами поделились
+devices-session-join-confirm = Присоединиться
+devices-session-code = Код сессии
+devices-session-code-menu = Показать код сессии
+devices-session-code-title = Код вашей сессии
+devices-session-code-detail = Присоединиться по этому коду может любой, кто вошёл в { $provider }
+devices-session-code-close = Готово
+devices-session-copy = Скопировать код
+devices-session-leave = Покинуть сессию
+devices-session-end = Завершить сессию
+devices-session-banner = Сессия { $host }
+devices-session-banner-anonymous = В сессии
+devices-session-banner-hosting = Ваша сессия
+devices-session-reconnecting = Переподключение…
+devices-session-people = { $count ->
+    [one] { $count } человек в этой сессии
+    [few] { $count } человека в этой сессии
+   *[many] { $count } человек в этой сессии
+    }
 fullscreen-artwork = Обложка
 
 # filters
@@ -1324,6 +1347,17 @@ toast-jam-failed = Не удалось начать Jam или присоеди�
 toast-jam-ended = Jam завершён
 toast-jam-left = Вы покинули Jam
 toast-jam-leave-failed = Не удалось завершить или покинуть Jam.
+toast-session-needs-provider = Войдите в стриминговый сервис, чтобы начать сессию.
+toast-session-not-found = Сессии с таким кодом нет.
+toast-session-provider = Эта сессия играет из { $name }. Войдите в { $name }, чтобы присоединиться.
+toast-session-full = В этой сессии нет мест.
+toast-session-rate-limited = Слишком много неверных кодов. Попробуйте через несколько минут.
+toast-session-unreachable = Не удалось связаться с Sonora Session. Попробуйте позже.
+toast-session-failed = Не удалось начать сессию или присоединиться к ней.
+toast-session-lost = Связь с сессией потеряна
+toast-session-ended = Сессия завершена
+toast-session-left = Вы покинули сессию
+toast-session-code-copied = Код скопирован
 nav-nothing-pinned = Здесь пусто
 nav-pins-alphabetical = По алфавиту
 nav-pins-kind = По типу

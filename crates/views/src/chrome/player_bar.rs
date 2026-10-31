@@ -23,6 +23,7 @@ use ui::{
 
 use crate::chrome::devices::DevicePicker;
 use crate::chrome::jam::{self, JamPeople};
+use crate::chrome::session;
 use crate::chrome::{Chrome, SidebarRight};
 use crate::shared::menus::ItemMenu;
 use crate::shared::transport::{NOTCH, fraction, like, moved, percent, transport, volume_icon};
@@ -481,10 +482,14 @@ impl PlayerBar {
     }
 
     /// How much of the content's bottom edge the strip above the bar covers right now, which
-    /// is nothing while no Jam or other device is being shown.
+    /// is nothing while no Jam, Sonora Session or other device is being shown.
     pub(crate) fn strip(playback: &Playback, cx: &gpui::App) -> Pixels {
         let devices = Sonora::global(cx).devices.read(cx);
-        match (devices.jam().is_some() && devices.available()) || playback.steered(cx).is_some() {
+        let together = Sonora::global(cx).listening.read(cx).room().is_some();
+        match (devices.jam().is_some() && devices.available())
+            || together
+            || playback.steered(cx).is_some()
+        {
             true => px(BANNER),
             false => Pixels::ZERO,
         }
@@ -522,6 +527,17 @@ impl Render for PlayerBar {
             true => Some(self.side_buttons(cx)),
             false => None,
         };
+        // the devices button stands with the panel buttons, one gap apart like them, and takes no
+        // gap of its own while it draws nothing
+        let picker = Sonora::global(cx).devices.read(cx).available()
+            || Sonora::global(cx).listening.read(cx).available(cx);
+        let buttons = div()
+            .flex()
+            .flex_none()
+            .items_center()
+            .gap_1()
+            .when(picker, |this| this.child(self.devices.clone()))
+            .children(sides);
 
         let playback = self.playback.read(cx);
         let seekable = playback.shown_track(cx).is_some();
@@ -634,9 +650,8 @@ impl Render for PlayerBar {
                         .gap_3()
                         .w_full()
                         .child(div().flex_1().min_w_0().child(seek))
-                        .children(sides)
+                        .child(buttons)
                         .child(self.sound(Self::volume_width(window), cx))
-                        .child(self.devices.clone())
                         .child(self.fullscreen_button()),
                 ),
             (false, PlayerBarLayout::Centered) => base
@@ -675,8 +690,7 @@ impl Render for PlayerBar {
                         .items_center()
                         .justify_end()
                         .gap_2()
-                        .child(self.devices.clone())
-                        .children(sides)
+                        .child(buttons)
                         .child(self.sound(px(VOLUME_WIDTH), cx))
                         .child(self.fullscreen_button()),
                 ),
@@ -689,8 +703,7 @@ impl Render for PlayerBar {
                 )
                 .child(transport(&self.playback, false, cx))
                 .child(div().flex_1().min_w_0().child(seek))
-                .child(self.devices.clone())
-                .children(sides)
+                .child(buttons)
                 .child(self.sound(px(VOLUME_WIDTH), cx))
                 .child(self.fullscreen_button()),
             _ => base
@@ -717,8 +730,7 @@ impl Render for PlayerBar {
                         .gap_2()
                         // never narrower than its buttons, or they spill over the seek bar's clock
                         .flex_1()
-                        .child(self.devices.clone())
-                        .children(sides)
+                        .child(buttons)
                         .child(self.sound(px(VOLUME_WIDTH), cx))
                         .child(self.fullscreen_button()),
                 ),
@@ -853,6 +865,79 @@ impl Render for PlayerBar {
                             controls.update(cx, |devices, cx| devices.leave(cx))
                         }),
                 )
+        });
+        // a Sonora Session's strip shows when no Jam's does, since the two play from one queue
+        let banner = banner.or_else(|| {
+            let listening = Sonora::global(cx).listening.clone();
+            let state = listening.read(cx);
+            let room = state.room()?;
+            let host = room
+                .host()
+                .map(|host| host.name.clone())
+                .filter(|name| !name.is_empty());
+            let text = match (state.reconnecting(), room.hosting(), host) {
+                (true, _, _) => t!("devices-session-reconnecting"),
+                (false, true, _) => t!("devices-session-banner-hosting"),
+                (false, false, Some(host)) => t!("devices-session-banner", host = host),
+                (false, false, None) => t!("devices-session-banner-anonymous"),
+            };
+            let people = session::people(room);
+            let code = room.code.clone();
+            let leave = match room.hosting() {
+                true => t!("devices-session-end"),
+                false => t!("devices-session-leave"),
+            };
+            Some(
+                strip("session-banner")
+                    .role(Role::Status)
+                    .aria_label(text.clone())
+                    .child(
+                        gpui::svg()
+                            .path(icons::path("icons/headphones.svg"))
+                            .size(px(BANNER_ICON))
+                            .flex_none()
+                            .text_color(theme.foreground),
+                    )
+                    .child(div().min_w_0().truncate().child(text))
+                    .child(
+                        div()
+                            .id("session-people")
+                            .role(Role::Group)
+                            .aria_label(t!("devices-session-people", count = people.len()))
+                            .flex()
+                            .flex_none()
+                            .items_center()
+                            .p(ui::snapped(px(FACES_PAD), window))
+                            .child(jam::faces(
+                                &people,
+                                BANNER_FACES,
+                                px(BANNER_FACE),
+                                0.,
+                                window,
+                                theme,
+                            )),
+                    )
+                    .child(div().flex_1())
+                    .child(
+                        Button::new("session-code")
+                            .ghost()
+                            .small()
+                            .icon("icons/copy.svg")
+                            .label(session::spaced(&code))
+                            .tooltip_above("devices-session-copy")
+                            .on_click(move |_, _, cx| session::copy_code(&code, cx)),
+                    )
+                    .child(
+                        Button::new("session-leave")
+                            .ghost()
+                            .small()
+                            .icon("icons/log-out.svg")
+                            .label(leave)
+                            .on_click(move |_, _, cx| {
+                                listening.update(cx, |listening, cx| listening.leave(cx))
+                            }),
+                    ),
+            )
         });
         // a Jam's strip names the device already, so the plain one is for when there is no Jam
         let banner = banner.or_else(|| {

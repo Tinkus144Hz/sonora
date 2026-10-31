@@ -12,8 +12,8 @@ use ui::{
 };
 
 use crate::chrome::{
-    AppNotice, Chrome, JamCode, JamJoin, PlayerBar, SidebarLeft, SidebarRight, TitleBarOptions,
-    ToastStack,
+    AppNotice, Chrome, JamCode, JamJoin, PlayerBar, SessionCode, SessionJoin, SidebarLeft,
+    SidebarRight, TitleBarOptions, ToastStack,
 };
 use crate::shared::confirm::Confirm;
 use crate::shared::menus::CardMenu;
@@ -41,6 +41,8 @@ pub(crate) struct Workspace {
     widevine: Entity<WidevinePrompt>,
     jam_join: Entity<JamJoin>,
     jam_code: Entity<JamCode>,
+    session_join: Entity<SessionJoin>,
+    session_code: Entity<SessionCode>,
     toasts: Entity<ToastStack>,
     notice: Entity<AppNotice>,
     content: AnyView,
@@ -87,6 +89,8 @@ impl Workspace {
             widevine: cx.new(WidevinePrompt::new),
             jam_join: cx.new(JamJoin::new),
             jam_code: cx.new(JamCode::new),
+            session_join: cx.new(SessionJoin::new),
+            session_code: cx.new(SessionCode::new),
             toasts: cx.new(ToastStack::new),
             notice: cx.new(AppNotice::new),
             content,
@@ -407,5 +411,7 @@ impl Render for Workspace {
             .child(self.widevine.clone())
             .child(self.jam_join.clone())
             .child(self.jam_code.clone())
+            .child(self.session_join.clone())
+            .child(self.session_code.clone())
     }
 }

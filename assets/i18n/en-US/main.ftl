@@ -309,6 +309,28 @@ devices-jam-invite-detail = { $count ->
 devices-jam-invite-join = Join
 devices-elsewhere-banner = Playing on { $device }
 devices-elsewhere-here = Play here
+player-listen-together = Listen together
+devices-session-start = Start a Session
+devices-session-join = Join a Session…
+devices-session-join-title = Join a Session
+devices-session-join-detail = Enter the code a friend shared with you
+devices-session-join-confirm = Join
+devices-session-code = Session code
+devices-session-code-menu = Show Session code
+devices-session-code-title = Your Session code
+devices-session-code-detail = Anyone signed in to { $provider } can join with this code
+devices-session-code-close = Done
+devices-session-copy = Copy code
+devices-session-leave = Leave Session
+devices-session-end = End Session
+devices-session-banner = In { $host }'s Session
+devices-session-banner-anonymous = In a Session
+devices-session-banner-hosting = Your Session
+devices-session-reconnecting = Reconnecting…
+devices-session-people = { $count ->
+    [one] { $count } person in this Session
+   *[other] { $count } people in this Session
+    }
 fullscreen-artwork = Artwork
 fullscreen-panels = Now playing views
 
@@ -1314,6 +1336,17 @@ toast-jam-failed = The Jam could not be started or joined.
 toast-jam-ended = Jam ended
 toast-jam-left = You left the Jam
 toast-jam-leave-failed = The Jam could not be ended or left.
+toast-session-needs-provider = Sign in to a streaming service to start a Session.
+toast-session-not-found = No Session goes by that code.
+toast-session-provider = This Session plays from { $name }. Sign in to { $name } to join it.
+toast-session-full = That Session is full.
+toast-session-rate-limited = Too many wrong codes. Try again in a few minutes.
+toast-session-unreachable = Could not reach Sonora Session. Try again later.
+toast-session-failed = The Session could not be started or joined.
+toast-session-lost = Lost the connection to the Session
+toast-session-ended = Session ended
+toast-session-left = You left the Session
+toast-session-code-copied = Code copied
 nav-nothing-pinned = Nothing here
 nav-pins-alphabetical = Alphabetical
 nav-pins-kind = By type
