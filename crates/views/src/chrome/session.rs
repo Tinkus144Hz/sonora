@@ -12,8 +12,8 @@ use ui::{ActiveTheme as _, Button, Dismiss, FORM_CONTEXT, Modal, OtpInput, OtpSl
 
 /// How many digits a code shows in each group, with a dash between the groups.
 const GROUP: usize = 3;
-/// How wide the dialog with the code stands, in covers, so the large slots keep a margin.
-const CODE_WIDTH: f32 = 3.;
+/// How wide both session dialogs stand, in covers, so the code keeps a margin on either side.
+const WIDTH: f32 = 3.;
 
 /// Takes the code of a session to join, typed or pasted. It shows for as long as `Listening`
 /// says the dialog is open, and joining hands the code to `Listening`.
@@ -99,6 +99,7 @@ impl Render for SessionJoin {
             }))
             .child(
                 Modal::new("session-join", t!("devices-session-join-title"))
+                    .w(cx.theme().metrics.cover * WIDTH)
                     .detail(t!("devices-session-join-detail"))
                     .child(div().flex().justify_center().child(self.code.clone()))
                     .action(
@@ -120,7 +121,7 @@ impl Render for SessionJoin {
     }
 }
 
-/// The code of the session the listener is in, large, for reading out to a friend. It shows
+/// The code of the session the listener is in, for reading out to a friend. It shows
 /// for as long as `Listening` says the code is on, which it turns on by itself once a session
 /// the listener started is up.
 pub(crate) struct SessionCode {
@@ -200,7 +201,7 @@ impl Render for SessionCode {
             }))
             .child(
                 Modal::new("session-code", t!("devices-session-code-title"))
-                    .w(cx.theme().metrics.cover * CODE_WIDTH)
+                    .w(cx.theme().metrics.cover * WIDTH)
                     .detail(t!("devices-session-code-detail", provider = provider))
                     .child(
                         div().flex().justify_center().child(
@@ -209,7 +210,7 @@ impl Render for SessionCode {
                                 .id("session-code-digits")
                                 .role(Role::Label)
                                 .aria_value(spoken)
-                                .child(OtpSlots::new(code).grouped(GROUP).large()),
+                                .child(OtpSlots::new(code).grouped(GROUP)),
                         ),
                     )
                     .action(

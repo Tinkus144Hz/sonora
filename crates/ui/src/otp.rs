@@ -16,8 +16,8 @@ const RING: Pixels = px(2.);
 /// The dash between two groups of slots.
 const DASH: Pixels = px(8.);
 const DASH_HEIGHT: Pixels = px(2.);
-/// How much larger a slot and its digit are when the slots are `large`.
-const LARGE: f32 = 1.3;
+/// How much larger a slot is than a text field is tall, so a code reads at a glance.
+const SLOT: f32 = 1.3;
 
 /// A row of one-character slots for a short numeric code, the way shadcn's InputOTP draws them.
 /// The slots stand in groups that share their borders, with a dash between groups. Nothing is
@@ -31,7 +31,6 @@ pub struct OtpSlots {
     group: usize,
     /// The slot the next digit lands in, ringed while the field has focus.
     active: Option<usize>,
-    large: bool,
 }
 
 impl OtpSlots {
@@ -44,7 +43,6 @@ impl OtpSlots {
             value,
             group: 0,
             active: None,
-            large: false,
         }
     }
 
@@ -64,11 +62,6 @@ impl OtpSlots {
         self.active = active;
         self
     }
-
-    pub fn large(mut self) -> Self {
-        self.large = true;
-        self
-    }
 }
 
 impl Styled for OtpSlots {
@@ -80,10 +73,8 @@ impl Styled for OtpSlots {
 impl RenderOnce for OtpSlots {
     fn render(mut self, _: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = *cx.theme();
-        let (side, text) = match self.large {
-            true => (theme.metrics.field * LARGE, theme.text(Text::Large)),
-            false => (theme.metrics.field, theme.text(Text::Body)),
-        };
+        let side = theme.metrics.field * SLOT;
+        let text = theme.text(Text::Large);
         let group = match self.group {
             0 => self.length.max(1),
             size => size,
