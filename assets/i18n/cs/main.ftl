@@ -295,15 +295,12 @@ devices-jam-paste = Vložit
 devices-jam-link-hint = Odkaz na Jam
 devices-jam-start = Spustit Jam
 devices-jam-copy = Kopírovat odkaz na Jam
-devices-jam-code = QR kód
 devices-jam-code-menu = Zobrazit QR kód
 devices-jam-code-title = Naskenuj a připoj se k Jamu uživatele { $host }
 devices-jam-code-title-anonymous = Naskenuj a připoj se k Jamu
 devices-jam-code-close = Zavřít
 devices-jam-leave = Opustit Jam
 devices-jam-end = Ukončit Jam
-devices-jam-banner = V Jamu uživatele { $host }
-devices-jam-banner-anonymous = V Jamu
 devices-jam-more = +{ $count }
 devices-jam-host = Hostitel
 devices-jam-you = Ty
@@ -316,8 +313,6 @@ devices-jam-invite-detail = { $count ->
    *[other] V tomto Jamu už je { $count } lidí.
 }
 devices-jam-invite-join = Připojit se
-devices-elsewhere-banner = Hraje na zařízení { $device }
-devices-elsewhere-here = Přehrát tady
 fullscreen-artwork = Obálka
 
 # filters

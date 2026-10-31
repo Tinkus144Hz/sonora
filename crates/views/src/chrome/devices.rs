@@ -3,7 +3,7 @@ use gpui::{App, ClickEvent, Context, Entity, SharedString, Window, div};
 use i18n::t;
 use music::connect::{Command, DeviceKind, Elsewhere};
 use state::{Devices, Listening, Sonora};
-use ui::{ActiveTheme as _, MenuItem, Picker, Popovers};
+use ui::{ActiveTheme as _, Menu, MenuItem, Picker, Popovers, SubmenuState};
 
 use crate::chrome::{jam, session};
 
@@ -14,6 +14,8 @@ pub(crate) struct DevicePicker {
     devices: Entity<Devices>,
     listening: Entity<Listening>,
     popovers: Popovers,
+    /// The Spotify Jams submenu, kept between frames so it stays open under the pointer.
+    jams: SubmenuState,
 }
 
 impl DevicePicker {
@@ -27,10 +29,11 @@ impl DevicePicker {
             devices,
             listening,
             popovers: Popovers::default(),
+            jams: SubmenuState::default(),
         }
     }
 
-    /// The account's other devices, the controls of the one that plays, and the Jam.
+    /// The account's other devices and the controls of the one that plays.
     fn connect_items(&self, elsewhere: Option<&Elsewhere>, cx: &App) -> Vec<MenuItem> {
         let state = self.devices.read(cx);
         let devices = self.devices.clone();
@@ -93,11 +96,18 @@ impl DevicePicker {
             );
         }
 
-        items.push(MenuItem::separator("jam-separator"));
+        items
+    }
+
+    /// The Spotify Jam's items, folded into one submenu so they do not crowd the session's.
+    fn jam_item(&self, cx: &App) -> MenuItem {
+        let state = self.devices.read(cx);
+        let devices = self.devices.clone();
+        let mut entries = Vec::new();
         match state.jam() {
             Some(jam) => {
                 if let Some(link) = jam.link.clone() {
-                    items.push(
+                    entries.push(
                         MenuItem::new("jam-code", t!("devices-jam-code-menu"))
                             .icon("icons/qr-code.svg")
                             .on_click({
@@ -107,13 +117,13 @@ impl DevicePicker {
                                 }
                             }),
                     );
-                    items.push(
+                    entries.push(
                         MenuItem::new("jam-copy", t!("devices-jam-copy"))
                             .icon("icons/copy.svg")
                             .on_click(move |_, _, cx| jam::copy_link(&link, cx)),
                     );
                 }
-                items.push(
+                entries.push(
                     MenuItem::new(
                         "jam-leave",
                         match jam.owner {
@@ -129,7 +139,7 @@ impl DevicePicker {
                 );
             }
             None => {
-                items.push(
+                entries.push(
                     MenuItem::new("jam-start", t!("devices-jam-start"))
                         .icon("icons/users-round-collaboration.svg")
                         .on_click({
@@ -137,7 +147,7 @@ impl DevicePicker {
                             move |_, _, cx| devices.update(cx, |devices, _| devices.start_jam())
                         }),
                 );
-                items.push(
+                entries.push(
                     MenuItem::new("jam-join", t!("devices-jam-join"))
                         .icon("icons/link.svg")
                         .on_click({
@@ -149,7 +159,14 @@ impl DevicePicker {
                 );
             }
         }
-        items
+        MenuItem::new("spotify-jams", t!("devices-spotify-jams"))
+            .icon("icons/spotify.svg")
+            .submenu(
+                Menu::new("spotify-jams-menu")
+                    .w(Picker::WIDE)
+                    .items(entries),
+                self.jams.clone(),
+            )
     }
 
     /// Starting or joining a Sonora Session, or what to do with the one the listener is in.
@@ -159,7 +176,7 @@ impl DevicePicker {
         let Some(room) = state.room() else {
             return vec![
                 MenuItem::new("session-start", t!("devices-session-start"))
-                    .icon("icons/headphones.svg")
+                    .icon("icons/users-round-collaboration.svg")
                     .when(state.asking(), MenuItem::disabled)
                     .on_click({
                         let listening = listening.clone();
@@ -219,6 +236,11 @@ impl Render for DevicePicker {
             items.push(MenuItem::separator("session-separator"));
         }
         items.extend(self.session_items(cx));
+        if connect {
+            items.push(self.jam_item(cx));
+        }
+        // an accent dot over the icon says a session or a Jam is under way
+        let gathered = together || state.jam().is_some_and(|_| connect);
 
         Picker::icon("devices", &self.popovers, "icons/monitor-speaker.svg")
             .tooltip_above(match connect {
@@ -230,6 +252,7 @@ impl Render for DevicePicker {
                 true => theme.foreground,
                 false => theme.muted_foreground,
             })
+            .when(gathered, |picker| picker.status(theme.primary))
             .width(Picker::WIDE)
             .items(items)
             .into_any_element()

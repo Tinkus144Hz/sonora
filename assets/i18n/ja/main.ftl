@@ -231,15 +231,12 @@ devices-jam-paste = 貼り付け
 devices-jam-link-hint = Jam のリンク
 devices-jam-start = Jam を開始
 devices-jam-copy = Jam のリンクをコピー
-devices-jam-code = QR コード
 devices-jam-code-menu = QR コードを表示
 devices-jam-code-title = スキャンして { $host } の Jam に参加
 devices-jam-code-title-anonymous = スキャンして Jam に参加
 devices-jam-code-close = 閉じる
 devices-jam-leave = Jam から退出
 devices-jam-end = Jam を終了
-devices-jam-banner = { $host } の Jam に参加中
-devices-jam-banner-anonymous = Jam に参加中
 devices-jam-more = +{ $count }
 devices-jam-host = ホスト
 devices-jam-you = あなた
@@ -250,8 +247,6 @@ devices-jam-invite-detail = { $count ->
    *[other] この Jam にはすでに{ $count }人が参加しています。
 }
 devices-jam-invite-join = 参加
-devices-elsewhere-banner = { $device } で再生中
-devices-elsewhere-here = ここで再生
 fullscreen-artwork = アートワーク
 
 # filters

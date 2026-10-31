@@ -175,6 +175,8 @@ pub enum SideTab {
     #[default]
     Queue,
     Lyrics,
+    /// The people in the Sonora Session or Spotify Jam the listener is in.
+    Members,
 }
 
 /// The writing systems lyrics romanization applies to. Only CJK are enabled by default.

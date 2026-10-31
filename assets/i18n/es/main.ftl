@@ -273,15 +273,12 @@ devices-jam-paste = Pegar
 devices-jam-link-hint = Enlace de la Jam
 devices-jam-start = Iniciar una Jam
 devices-jam-copy = Copiar el enlace de la Jam
-devices-jam-code = Código QR
 devices-jam-code-menu = Mostrar el código QR
 devices-jam-code-title = Escanea para unirte a la Jam de { $host }
 devices-jam-code-title-anonymous = Escanea para unirte a la Jam
 devices-jam-code-close = Cerrar
 devices-jam-leave = Salir de la Jam
 devices-jam-end = Terminar la Jam
-devices-jam-banner = En la Jam de { $host }
-devices-jam-banner-anonymous = En una Jam
 devices-jam-more = +{ $count }
 devices-jam-host = Anfitrión
 devices-jam-you = Tú
@@ -293,8 +290,6 @@ devices-jam-invite-detail = { $count ->
    *[other] { $count } personas ya están en esta Jam.
 }
 devices-jam-invite-join = Unirse
-devices-elsewhere-banner = Sonando en { $device }
-devices-elsewhere-here = Reproducir aquí
 fullscreen-artwork = Portada
 
 # filters

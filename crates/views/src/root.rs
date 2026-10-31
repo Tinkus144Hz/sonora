@@ -3,8 +3,8 @@ use gpui::{App, Font, FontFallbacks, SharedString, StyleRefinement, font, prelud
 use gpui::{Window, div};
 use input::{
     CloseWindow, MinimizeWindow, NavigateBack, NavigateForward, OpenFilter, OpenSearch,
-    OpenSettings, Refresh, ToggleFullscreen, ToggleLyrics, ToggleQueue, ToggleWindowFullscreen,
-    ZoomWindow,
+    OpenSettings, Refresh, ToggleFullscreen, ToggleLyrics, ToggleMembers, ToggleQueue,
+    ToggleWindowFullscreen, ZoomWindow,
 };
 use router::{Destination, NavigationEvent, Screen, back, forward, navigate};
 use state::{
@@ -1222,6 +1222,9 @@ impl Render for Root {
             )
             .on_action(
                 cx.listener(|this, _: &ToggleLyrics, _, cx| this.show_side(SideTab::Lyrics, cx)),
+            )
+            .on_action(
+                cx.listener(|this, _: &ToggleMembers, _, cx| this.show_side(SideTab::Members, cx)),
             )
             // The ambient background sits behind everything, title bar included.
             .when(ambient, |this| this.child(self.ambient.clone()))

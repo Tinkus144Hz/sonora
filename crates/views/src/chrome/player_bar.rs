@@ -1,6 +1,3 @@
-use std::cell::Cell;
-use std::rc::Rc;
-
 use router::{Destination, Link, navigate};
 use std::time::Duration;
 use ui::ActiveTheme as _;
@@ -9,21 +6,21 @@ use ui::Tails as _;
 use gpui::accesskit::Role;
 use gpui::prelude::*;
 use gpui::{
-    AnyElement, Bounds, ClickEvent, Context, Entity, MouseButton, MouseDownEvent, MouseMoveEvent,
-    MouseUpEvent, Pixels, Point, Render, ScrollWheelEvent, SharedString,
+    AnyElement, Context, Entity, MouseButton, MouseDownEvent, MouseMoveEvent, MouseUpEvent, Pixels,
+    Point, Render, ScrollWheelEvent, SharedString,
 };
-use gpui::{Window, canvas, div, point, px};
+use gpui::{Window, div, px};
 use i18n::t;
-use input::{ToggleFullscreen, ToggleLyrics, ToggleQueue};
+use input::{ToggleFullscreen, ToggleLyrics, ToggleMembers, ToggleQueue};
 use state::{AppSettings, Playback, PlayerBarLayout, Queue, SideTab, Sonora};
 use ui::{
-    Artwork, Button, ExplicitBadge, HoverFade, InlineLink, InlineLinks, Motion, Popup, Room,
-    Scrollbar, Scrubber, ScrubberState, clock, tabular,
+    Artwork, Button, ExplicitBadge, InlineLink, InlineLinks, Popup, Room, Scrollbar, Scrubber,
+    ScrubberState, clock, tabular,
 };
 
 use crate::chrome::devices::DevicePicker;
-use crate::chrome::jam::{self, JamPeople};
-use crate::chrome::session;
+use crate::chrome::jam;
+use crate::chrome::members::gathered;
 use crate::chrome::{Chrome, SidebarRight};
 use crate::shared::menus::ItemMenu;
 use crate::shared::transport::{NOTCH, fraction, like, moved, percent, transport, volume_icon};
@@ -33,26 +30,15 @@ const VOLUME_WIDTH: f32 = 110.;
 const VOLUME_TIGHT: f32 = 72.;
 const CLOCK_SHORT: f32 = 3.4;
 const CLOCK_LONG: f32 = 5.4;
-/// The height of the strip above the bar that names the Jam being listened to, or the other
-/// device playback is on.
-const BANNER: f32 = 32.;
-const BANNER_ICON: f32 = 14.;
-/// The width of a member's picture on the strip, and how many of them it shows before it counts
-/// the rest.
-const BANNER_FACE: f32 = 24.;
-const BANNER_FACES: usize = 4;
-/// The space round the faces inside their pill, the same on every side so the pill's round ends
-/// stay concentric with the faces.
-const FACES_PAD: f32 = 2.;
+/// How many faces the Members button wears, and how much of a small control each one fills.
+const MEMBER_FACES: usize = 3;
+const MEMBER_FACE: f32 = 0.7;
 
 pub(crate) struct PlayerBar {
     playback: Entity<Playback>,
     settings: Entity<AppSettings>,
     track_menu: ItemMenu,
     devices: Entity<DevicePicker>,
-    people: Entity<JamPeople>,
-    /// Where the faces on the Jam's strip were last laid out, so the people list opens over them.
-    faces_at: Rc<Cell<Option<Bounds<Pixels>>>>,
     context_menu: Option<(music::Track, Point<Pixels>)>,
     seek: ScrubberState,
     volume: ScrubberState,
@@ -70,13 +56,14 @@ impl PlayerBar {
         let devices = Sonora::global(cx).devices.clone();
         cx.observe(&playback, |_, _, cx| cx.notify()).detach();
         cx.observe(&devices, |_, _, cx| cx.notify()).detach();
+        let listening = Sonora::global(cx).listening.clone();
+        cx.observe(&listening, |_, _, cx| cx.notify()).detach();
         cx.observe(&queue, |_, _, cx| cx.notify()).detach();
         cx.observe(&library, |_, _, cx| cx.notify()).detach();
         cx.observe(&settings, |_, _, cx| cx.notify()).detach();
 
         let me = cx.entity_id();
         let playlist_scrollbar = cx.new(|_| Scrollbar::inset().watching(me));
-        let people = cx.new(JamPeople::new);
         let picker = cx.new(DevicePicker::new);
 
         Self {
@@ -84,8 +71,6 @@ impl PlayerBar {
             settings,
             track_menu: ItemMenu::new(playlist_scrollbar, cx),
             devices: picker,
-            people,
-            faces_at: Rc::default(),
             context_menu: None,
             seek: ScrubberState::new("seek"),
             volume: ScrubberState::new("volume"),
@@ -224,49 +209,67 @@ impl PlayerBar {
             )
     }
 
-    fn side_buttons(&mut self, cx: &mut Context<Self>) -> AnyElement {
+    /// The buttons that open the right sidebar on a panel. Members shows only while the
+    /// listener is in a Sonora Session or a Jam, and wears the first faces of the people in it.
+    fn side_buttons(&mut self, window: &Window, cx: &mut Context<Self>) -> AnyElement {
         let theme = *cx.theme();
         let (open, tab) = {
             let settings = self.settings.read(cx);
             (settings.sidebar_right_open(), settings.sidebar_right_tab())
         };
 
-        let button = move |id: &'static str, icon: &'static str, hint: &'static str, side| {
-            let showing = open && tab == side;
+        let button =
+            move |id: &'static str, icon: Option<&'static str>, hint: &'static str, side| {
+                let showing = open && tab == side;
 
-            Button::new(id)
-                .ghost()
-                .small()
-                .icon(icon)
-                .tooltip_above(hint)
-                .selected(showing)
-                .tint(match showing {
-                    true => theme.foreground,
-                    false => theme.muted_foreground,
-                })
-                .on_click(move |_, window, cx| {
-                    let action: Box<dyn gpui::Action> = match side {
-                        SideTab::Queue => Box::new(ToggleQueue),
-                        SideTab::Lyrics => Box::new(ToggleLyrics),
-                    };
-                    window.dispatch_action(action, cx);
-                })
-        };
+                Button::new(id)
+                    .ghost()
+                    .small()
+                    .when_some(icon, Button::icon)
+                    .tooltip_above(hint)
+                    .selected(showing)
+                    .tint(match showing {
+                        true => theme.foreground,
+                        false => theme.muted_foreground,
+                    })
+                    .on_click(move |_, window, cx| {
+                        let action: Box<dyn gpui::Action> = match side {
+                            SideTab::Queue => Box::new(ToggleQueue),
+                            SideTab::Lyrics => Box::new(ToggleLyrics),
+                            SideTab::Members => Box::new(ToggleMembers),
+                        };
+                        window.dispatch_action(action, cx);
+                    })
+            };
+
+        let people = gathered(cx);
+        let members = (!people.is_empty()).then(|| {
+            let faces = jam::faces(
+                &people,
+                MEMBER_FACES,
+                theme.metrics.control_small * MEMBER_FACE,
+                0.,
+                window,
+                theme,
+            );
+            button("player-members", None, "members-title", SideTab::Members).leading(faces)
+        });
 
         div()
             .flex()
             .flex_none()
             .items_center()
             .gap_1()
+            .children(members)
             .child(button(
                 "player-lyrics",
-                "icons/mic-vocal.svg",
+                Some("icons/mic-vocal.svg"),
                 "lyrics-title",
                 SideTab::Lyrics,
             ))
             .child(button(
                 "player-queue",
-                "icons/list-music.svg",
+                Some("icons/list-music.svg"),
                 "queue-title",
                 SideTab::Queue,
             ))
@@ -481,20 +484,6 @@ impl PlayerBar {
         }
     }
 
-    /// How much of the content's bottom edge the strip above the bar covers right now, which
-    /// is nothing while no Jam, Sonora Session or other device is being shown.
-    pub(crate) fn strip(playback: &Playback, cx: &gpui::App) -> Pixels {
-        let devices = Sonora::global(cx).devices.read(cx);
-        let together = Sonora::global(cx).listening.read(cx).room().is_some();
-        match (devices.jam().is_some() && devices.available())
-            || together
-            || playback.steered(cx).is_some()
-        {
-            true => px(BANNER),
-            false => Pixels::ZERO,
-        }
-    }
-
     /// The height the workspace reserves, shared by the overlay's bottom scroll clearance.
     pub(crate) fn height(window: &Window, cx: &gpui::App) -> Pixels {
         let theme = *cx.theme();
@@ -524,7 +513,7 @@ impl Render for PlayerBar {
 
         let show_track = span.fits(Room::Snug);
         let sides = match SidebarRight::available(window) {
-            true => Some(self.side_buttons(cx)),
+            true => Some(self.side_buttons(window, cx)),
             false => None,
         };
         // the devices button stands with the panel buttons, one gap apart like them, and takes no
@@ -736,247 +725,8 @@ impl Render for PlayerBar {
                 ),
         };
 
-        // the faces on the Jam's strip spread apart under the pointer
-        let faces =
-            window.use_keyed_state("jam-faces", cx, |_, _| HoverFade::new(Motion::Quick.span()));
-        let spread = faces.update(cx, |faces, cx| faces.level(window, cx));
-        let frosting = ui::blurring(cx);
-        let devices = Sonora::global(cx).devices.read(cx);
-        // A strip floats over the page's last rows, so it keeps the pointer from reaching them.
-        let strip = |id: &'static str| {
-            div()
-                .id(id)
-                .occlude()
-                .absolute()
-                .left_0()
-                .bottom(height)
-                .w_full()
-                .h(px(BANNER))
-                .px_5()
-                .flex()
-                .items_center()
-                .gap_2()
-                .text_size(theme.text(ui::Text::Small))
-                .text_color(theme.foreground)
-                .when_else(
-                    frosting,
-                    |this| ui::bar_surface(this, cx),
-                    |this| this.bg(theme.popover),
-                )
-        };
-        let banner = devices.jam().filter(|_| devices.available()).map(|jam| {
-            let text = match jam::host_name(jam) {
-                Some(host) => t!("devices-jam-banner", host = host),
-                None => t!("devices-jam-banner-anonymous"),
-            };
-            // The people list rises from the strip's top edge, over the faces that open it.
-            let top = window.viewport_size().height - height - px(BANNER);
-            let controls = Sonora::global(cx).devices.clone();
-            let anchor = self.faces_at.clone();
-            let measured = self.faces_at.clone();
-            strip("jam-banner")
-                .role(Role::Status)
-                .aria_label(text.clone())
-                .child(
-                    gpui::svg()
-                        .path(icons::path("icons/users-round-collaboration.svg"))
-                        .size(px(BANNER_ICON))
-                        .flex_none()
-                        .text_color(theme.foreground),
-                )
-                .child(div().min_w_0().truncate().child(text.clone()))
-                .child(
-                    div()
-                        .id("jam-people-open")
-                        .role(Role::Button)
-                        .aria_label(t!("devices-jam-people", count = jam.members.len()))
-                        .relative()
-                        .flex()
-                        .flex_none()
-                        .items_center()
-                        .p(ui::snapped(px(FACES_PAD), window))
-                        .rounded_full()
-                        .cursor_pointer()
-                        .bg(theme.secondary_hover.opacity(spread))
-                        .on_hover({
-                            let faces = faces.clone();
-                            move |hovered, window, cx| {
-                                faces.update(cx, |faces, _| faces.set(*hovered));
-                                window.refresh();
-                            }
-                        })
-                        .on_click(cx.listener(move |this, _: &ClickEvent, _, cx| {
-                            let left = anchor.get().map_or(Pixels::ZERO, |bounds| bounds.left());
-                            this.people
-                                .update(cx, |people, cx| people.show(point(left, top), cx));
-                        }))
-                        .child(jam::faces(
-                            &jam.members,
-                            BANNER_FACES,
-                            px(BANNER_FACE),
-                            spread,
-                            window,
-                            theme,
-                        ))
-                        .child(
-                            canvas(
-                                move |bounds, _, _| measured.set(Some(bounds)),
-                                |_, _, _, _| {},
-                            )
-                            .absolute()
-                            .inset_0(),
-                        ),
-                )
-                // the faces follow the Jam's name, and its buttons keep to the right edge
-                .child(div().flex_1())
-                .when_some(jam.link.clone(), |this, link| {
-                    this.child(
-                        Button::new("jam-code")
-                            .ghost()
-                            .small()
-                            .icon("icons/qr-code.svg")
-                            .tooltip_above("devices-jam-code")
-                            .on_click({
-                                let devices = controls.clone();
-                                move |_, _, cx| {
-                                    devices.update(cx, |devices, cx| devices.show_code(true, cx))
-                                }
-                            }),
-                    )
-                    .child(
-                        Button::new("jam-copy")
-                            .ghost()
-                            .small()
-                            .icon("icons/copy.svg")
-                            .tooltip_above("devices-jam-copy")
-                            .on_click(move |_, _, cx| jam::copy_link(&link, cx)),
-                    )
-                })
-                .child(
-                    Button::new("jam-leave")
-                        .ghost()
-                        .small()
-                        .icon("icons/log-out.svg")
-                        .label(match jam.owner {
-                            true => t!("devices-jam-end"),
-                            false => t!("devices-jam-leave"),
-                        })
-                        .on_click(move |_, _, cx| {
-                            controls.update(cx, |devices, cx| devices.leave(cx))
-                        }),
-                )
-        });
-        // a Sonora Session's strip shows when no Jam's does, since the two play from one queue
-        let banner = banner.or_else(|| {
-            let listening = Sonora::global(cx).listening.clone();
-            let state = listening.read(cx);
-            let room = state.room()?;
-            let host = room
-                .host()
-                .map(|host| host.name.clone())
-                .filter(|name| !name.is_empty());
-            let text = match (state.reconnecting(), room.hosting(), host) {
-                (true, _, _) => t!("devices-session-reconnecting"),
-                (false, true, _) => t!("devices-session-banner-hosting"),
-                (false, false, Some(host)) => t!("devices-session-banner", host = host),
-                (false, false, None) => t!("devices-session-banner-anonymous"),
-            };
-            let people = session::people(room);
-            let code = room.code.clone();
-            let leave = match room.hosting() {
-                true => t!("devices-session-end"),
-                false => t!("devices-session-leave"),
-            };
-            Some(
-                strip("session-banner")
-                    .role(Role::Status)
-                    .aria_label(text.clone())
-                    .child(
-                        gpui::svg()
-                            .path(icons::path("icons/headphones.svg"))
-                            .size(px(BANNER_ICON))
-                            .flex_none()
-                            .text_color(theme.foreground),
-                    )
-                    .child(div().min_w_0().truncate().child(text))
-                    .child(
-                        div()
-                            .id("session-people")
-                            .role(Role::Group)
-                            .aria_label(t!("devices-session-people", count = people.len()))
-                            .flex()
-                            .flex_none()
-                            .items_center()
-                            .p(ui::snapped(px(FACES_PAD), window))
-                            .child(jam::faces(
-                                &people,
-                                BANNER_FACES,
-                                px(BANNER_FACE),
-                                0.,
-                                window,
-                                theme,
-                            )),
-                    )
-                    .child(div().flex_1())
-                    .child(
-                        Button::new("session-code")
-                            .ghost()
-                            .small()
-                            .icon("icons/copy.svg")
-                            .label(session::spaced(&code))
-                            .tooltip_above("devices-session-copy")
-                            .on_click(move |_, _, cx| session::copy_code(&code, cx)),
-                    )
-                    .child(
-                        Button::new("session-leave")
-                            .ghost()
-                            .small()
-                            .icon("icons/log-out.svg")
-                            .label(leave)
-                            .on_click(move |_, _, cx| {
-                                listening.update(cx, |listening, cx| listening.leave(cx))
-                            }),
-                    ),
-            )
-        });
-        // a Jam's strip names the device already, so the plain one is for when there is no Jam
-        let banner = banner.or_else(|| {
-            self.playback.read(cx).steered(cx).map(|steered| {
-                let devices = Sonora::global(cx).devices.clone();
-                strip("elsewhere-banner")
-                    .role(Role::Status)
-                    .aria_label(t!(
-                        "devices-elsewhere-banner",
-                        device = steered.device.name.clone()
-                    ))
-                    .child(
-                        gpui::svg()
-                            .path(icons::path("icons/monitor-speaker.svg"))
-                            .size(px(BANNER_ICON))
-                            .flex_none()
-                            .text_color(theme.foreground),
-                    )
-                    .child(
-                        div()
-                            .flex_1()
-                            .min_w_0()
-                            .truncate()
-                            .child(t!("devices-elsewhere-banner", device = steered.device.name)),
-                    )
-                    .child(
-                        Button::new("elsewhere-here")
-                            .ghost()
-                            .small()
-                            .label(t!("devices-elsewhere-here"))
-                            .on_click(move |_, _, cx| devices.read(cx).transfer_here()),
-                    )
-            })
-        });
-
         content
             .relative()
-            .when_some(banner, |this, banner| this.child(banner))
             .when_some(context_menu, |this, menu| this.child(menu))
-            .child(self.people.clone())
     }
 }

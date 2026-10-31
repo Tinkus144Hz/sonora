@@ -273,15 +273,12 @@ devices-jam-paste = Ngjit
 devices-jam-link-hint = Lidhja e Jam-it
 devices-jam-start = Nis një Jam
 devices-jam-copy = Kopjo lidhjen e Jam-it
-devices-jam-code = Kodi QR
 devices-jam-code-menu = Shfaq kodin QR
 devices-jam-code-title = Skano për t'u bashkuar në Jam-in e { $host }
 devices-jam-code-title-anonymous = Skano për t'u bashkuar në Jam
 devices-jam-code-close = Mbyll
 devices-jam-leave = Largohu nga Jam-i
 devices-jam-end = Përfundo Jam-in
-devices-jam-banner = Në Jam-in e { $host }
-devices-jam-banner-anonymous = Në një Jam
 devices-jam-more = +{ $count }
 devices-jam-host = Organizatori
 devices-jam-you = Ti
@@ -293,8 +290,6 @@ devices-jam-invite-detail = { $count ->
    *[other] { $count } persona janë tashmë në këtë Jam.
 }
 devices-jam-invite-join = Bashkohu
-devices-elsewhere-banner = Duke luajtur në { $device }
-devices-elsewhere-here = Luaj këtu
 fullscreen-artwork = Kopertina
 
 # filters
