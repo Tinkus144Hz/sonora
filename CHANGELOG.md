@@ -7,6 +7,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- An artist page shows the artist's banner behind its header, sharp at the top and blurring into
+  the page under the name. Artists without a banner get a soft wash of their photo's colours.
+
 ### Changed
 
 - A song's right-click menu groups Artist, Album, Radio and Details under one Go to submenu.
