@@ -383,24 +383,16 @@ impl SettingsView {
         })
         .detach();
 
-        // the address row says what the check of the listener's own server found
+        // the Save button stands held while the server it saves is checked
         let listening = Sonora::global(cx).listening.clone();
         cx.observe(&listening, |_, _, cx| cx.notify()).detach();
         let sessions_server =
             cx.new(|cx| Input::new("settings-sessions-server-hint", cx).compact());
         let typed = settings.read(cx).sessions_server().to_owned();
-        sessions_server.update(cx, |input, cx| input.set_text(typed.clone(), cx));
-        // what is typed is only checked, and kept once the Save button finds its server answers
-        listening.update(cx, |listening, cx| listening.check_server(&typed, cx));
-        cx.observe(&sessions_server, |_, input, cx| {
-            let text = input.read(cx).text().to_owned();
-            Sonora::global(cx)
-                .listening
-                .clone()
-                .update(cx, |listening, cx| listening.check_server(&text, cx));
-            cx.notify();
-        })
-        .detach();
+        sessions_server.update(cx, |input, cx| input.set_text(typed, cx));
+        // what is typed is kept only once the Save button finds its server answers
+        cx.observe(&sessions_server, |_, _, cx| cx.notify())
+            .detach();
 
         let popovers = Popovers::default();
         let output_picker = cx.new(|cx| OutputPicker::new(outputs.clone(), popovers.clone(), cx));

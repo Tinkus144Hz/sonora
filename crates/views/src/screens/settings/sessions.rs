@@ -1,8 +1,8 @@
 use gpui::prelude::*;
 use gpui::{AnyElement, App, Context, div};
 use i18n::t;
-use state::{Outcome, ServerCheck, Sonora, Toasts};
-use ui::{ActiveTheme as _, Button, Picker, Switch};
+use state::Sonora;
+use ui::{Button, Picker, Switch};
 
 use super::{Group, SettingsView, Slot};
 
@@ -60,23 +60,12 @@ impl SettingsView {
         )
     }
 
-    /// The address of the listener's own server and the button that saves it. Saving takes only
-    /// an address whose server answered its health check, and the button's tooltip says why
-    /// one does not.
+    /// The address of the listener's own server and the button that saves it. Saving checks the
+    /// server first and keeps it only once it answers, and a toast says how it went. The field is
+    /// compact and the button small, so the two stand the same height.
     pub(super) fn sessions_server_row(&self, cx: &mut Context<Self>) -> AnyElement {
-        let typed = self.sessions_server.read(cx).text().trim().to_owned();
-        let saved = self.settings.read(cx).sessions_server().trim() == typed;
-        let listening = Sonora::global(cx).listening.read(cx);
-        let answers = listening.checked() == Some(typed.as_str())
-            && *listening.server_check() == ServerCheck::Answers;
-        let hint = match listening.server_check() {
-            _ if typed.is_empty() => "settings-sessions-save-empty",
-            ServerCheck::Answers if saved => "settings-sessions-save-saved",
-            ServerCheck::Answers => "settings-sessions-server-answers",
-            ServerCheck::Idle | ServerCheck::Checking => "settings-sessions-server-checking",
-            ServerCheck::Malformed => "settings-sessions-server-malformed",
-            ServerCheck::Silent => "settings-sessions-server-silent",
-        };
+        let saving = Sonora::global(cx).listening.read(cx).saving();
+        let field = self.sessions_server.clone();
 
         self.row(
             t!("settings-sessions-server"),
@@ -92,18 +81,16 @@ impl SettingsView {
                 .child(
                     Button::new("sessions-server-save")
                         .secondary()
-                        .h(cx.theme().metrics.field)
+                        .small()
                         .label(t!("settings-sessions-save"))
-                        .tooltip(hint)
-                        .on_click(cx.listener(move |this, _, _, cx| {
-                            if !answers || saved {
-                                return;
-                            }
-                            let typed = typed.clone();
-                            this.settings
-                                .update(cx, |settings, cx| settings.set_sessions_server(typed, cx));
-                            Toasts::show(Outcome::Done, "toast-sessions-server-saved", cx);
-                        })),
+                        .disabled(saving)
+                        .on_click(move |_, _, cx| {
+                            let typed = field.read(cx).text().to_owned();
+                            Sonora::global(cx)
+                                .listening
+                                .clone()
+                                .update(cx, |listening, cx| listening.save_server(&typed, cx));
+                        }),
                 )
                 .into_any_element(),
         )

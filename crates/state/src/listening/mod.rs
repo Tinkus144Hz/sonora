@@ -14,7 +14,6 @@ use gpui::{App, Context, Entity, Task};
 use music::Track;
 use tokio::sync::mpsc::UnboundedReceiver;
 
-pub use server::ServerCheck;
 pub use wire::Member;
 
 use crate::{
@@ -23,8 +22,6 @@ use crate::{
 use link::{Heard, Link};
 use wire::{Reason, Reply, Request, Shared, VERSION};
 
-/// How long the address of the listener's own server has to stay unchanged before it is checked.
-const SETTLE: Duration = Duration::from_millis(600);
 /// How many digits a session code has.
 pub const CODE_LENGTH: usize = 6;
 /// How many upcoming tracks are shared. The server keeps no more than this either.
@@ -112,10 +109,8 @@ pub struct Listening {
     join_shown: bool,
     settings: Entity<AppSettings>,
     http: reqwest::Client,
-    /// What the last check of the listener's own server found, and the address it checked.
-    probe: ServerCheck,
-    probed: Option<String>,
-    probing: Option<Task<()>>,
+    /// The health check of a server the listener asked to save.
+    saving: Option<Task<()>>,
 }
 
 impl Listening {
@@ -155,9 +150,7 @@ impl Listening {
             join_shown: false,
             settings,
             http: reqwest::Client::new(),
-            probe: ServerCheck::Idle,
-            probed: None,
-            probing: None,
+            saving: None,
         }
     }
 
@@ -307,9 +300,9 @@ impl Listening {
         }
     }
 
-    /// What the last check of the listener's own server found.
-    pub fn server_check(&self) -> &ServerCheck {
-        &self.probe
+    /// Whether a server the listener asked to save is being checked.
+    pub fn saving(&self) -> bool {
+        self.saving.is_some()
     }
 
     /// The server sessions go through: the one `SONORA_SESSION_SERVER` names, else the
@@ -327,52 +320,40 @@ impl Listening {
             .map_or_else(|| server::OFFICIAL.to_owned(), |url| url.to_string())
     }
 
-    /// The address the last check was for, as typed and trimmed.
-    pub fn checked(&self) -> Option<&str> {
-        self.probed.as_deref()
-    }
-
-    /// Checks the server at `typed` once the address has stopped changing for a moment, as the
-    /// listener types it. An empty address forgets the last check.
-    pub fn check_server(&mut self, typed: &str, cx: &mut Context<Self>) {
-        let typed = Some(typed.trim())
-            .filter(|typed| !typed.is_empty())
-            .map(str::to_owned);
-        if typed == self.probed {
-            return;
+    /// Checks the server at `typed` and keeps it as the listener's own once it answers its health
+    /// check. A toast says how it went, so an address that does not lead to a Sonora Sessions
+    /// server is never saved.
+    pub fn save_server(&mut self, typed: &str, cx: &mut Context<Self>) {
+        let typed = typed.trim().to_owned();
+        if typed.is_empty() {
+            return Toasts::show(Outcome::Info, "toast-sessions-server-empty", cx);
         }
-        self.probed = typed.clone();
-        let Some(typed) = typed else {
-            self.probing = None;
-            self.probe = ServerCheck::Idle;
-            return cx.notify();
-        };
         let Some(socket) = server::socket(&typed) else {
-            self.probing = None;
-            self.probe = ServerCheck::Malformed;
-            return cx.notify();
+            return Toasts::show(Outcome::Failed, "toast-sessions-server-malformed", cx);
         };
-        self.probe = ServerCheck::Checking;
-        cx.notify();
         let http = self.http.clone();
         let io = self.io.clone();
-        self.probing = Some(cx.spawn(async move |this, cx| {
-            cx.background_executor().timer(SETTLE).await;
+        self.saving = Some(cx.spawn(async move |this, cx| {
             let found = io.spawn(server::check(http, socket.clone())).await;
             this.update(cx, |this, cx| {
-                this.probing = None;
-                this.probe = match found {
-                    Ok(Ok(())) => ServerCheck::Answers,
+                this.saving = None;
+                match found {
+                    Ok(Ok(())) => {
+                        this.settings
+                            .update(cx, |settings, cx| settings.set_sessions_server(typed, cx));
+                        Toasts::show(Outcome::Done, "toast-sessions-server-saved", cx);
+                    }
                     Ok(Err(error)) => {
                         log::info!("listening: {socket} did not pass its health check: {error:#}");
-                        ServerCheck::Silent
+                        Toasts::show(Outcome::Failed, "toast-sessions-server-silent", cx);
                     }
-                    Err(_) => ServerCheck::Silent,
-                };
+                    Err(_) => Toasts::show(Outcome::Failed, "toast-sessions-server-silent", cx),
+                }
                 cx.notify();
             })
             .ok();
         }));
+        cx.notify();
     }
 
     fn connect(&mut self, first: Request, cx: &mut Context<Self>) {

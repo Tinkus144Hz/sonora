@@ -14,21 +14,6 @@ pub(crate) const VARIABLE: &str = "SONORA_SESSION_SERVER";
 /// How long a health check waits for an answer.
 const PATIENCE: Duration = Duration::from_secs(6);
 
-/// What the last check of the listener's own server found.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub enum ServerCheck {
-    /// No address to check, or the official server is in use.
-    #[default]
-    Idle,
-    Checking,
-    /// The server answered its health check.
-    Answers,
-    /// The address does not read as one.
-    Malformed,
-    /// Nothing at the address answered as a Sonora Sessions server.
-    Silent,
-}
-
 /// The WebSocket address `typed` stands for. A bare host or an http address is taken to mean the
 /// server's WebSocket on the same host, and an address without a path gets the server's `/ws`.
 pub(crate) fn socket(typed: &str) -> Option<Url> {
