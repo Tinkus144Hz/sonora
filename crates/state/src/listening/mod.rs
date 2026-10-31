@@ -111,6 +111,8 @@ pub struct Listening {
     http: reqwest::Client,
     /// The health check of a server the listener asked to save.
     saving: Option<Task<()>>,
+    /// Whether the last save was turned down. It stays so until a save goes through.
+    rejected: bool,
 }
 
 impl Listening {
@@ -151,6 +153,7 @@ impl Listening {
             settings,
             http: reqwest::Client::new(),
             saving: None,
+            rejected: false,
         }
     }
 
@@ -300,6 +303,12 @@ impl Listening {
         }
     }
 
+    /// Whether the last save of the listener's own server was turned down, which lasts until
+    /// one goes through.
+    pub fn rejected(&self) -> bool {
+        self.rejected
+    }
+
     /// Whether a server the listener asked to save is being checked.
     pub fn saving(&self) -> bool {
         self.saving.is_some()
@@ -320,15 +329,22 @@ impl Listening {
             .map_or_else(|| server::OFFICIAL.to_owned(), |url| url.to_string())
     }
 
+    fn reject(&mut self, cx: &mut Context<Self>) {
+        self.rejected = true;
+        cx.notify();
+    }
+
     /// Checks the server at `typed` and keeps it as the listener's own once it answers its health
     /// check. A toast says how it went, so an address that does not lead to a Sonora Sessions
     /// server is never saved.
     pub fn save_server(&mut self, typed: &str, cx: &mut Context<Self>) {
         let typed = typed.trim().to_owned();
         if typed.is_empty() {
+            self.reject(cx);
             return Toasts::show(Outcome::Info, "toast-sessions-server-empty", cx);
         }
         let Some(socket) = server::socket(&typed) else {
+            self.reject(cx);
             return Toasts::show(Outcome::Failed, "toast-sessions-server-malformed", cx);
         };
         let http = self.http.clone();
@@ -339,15 +355,20 @@ impl Listening {
                 this.saving = None;
                 match found {
                     Ok(Ok(())) => {
+                        this.rejected = false;
                         this.settings
                             .update(cx, |settings, cx| settings.set_sessions_server(typed, cx));
                         Toasts::show(Outcome::Done, "toast-sessions-server-saved", cx);
                     }
                     Ok(Err(error)) => {
                         log::info!("listening: {socket} did not pass its health check: {error:#}");
+                        this.rejected = true;
                         Toasts::show(Outcome::Failed, "toast-sessions-server-silent", cx);
                     }
-                    Err(_) => Toasts::show(Outcome::Failed, "toast-sessions-server-silent", cx),
+                    Err(_) => {
+                        this.rejected = true;
+                        Toasts::show(Outcome::Failed, "toast-sessions-server-silent", cx)
+                    }
                 }
                 cx.notify();
             })

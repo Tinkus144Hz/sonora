@@ -250,6 +250,9 @@ pub struct Input {
     masked: bool,
     /// Whether the text keeps to the field's end rather than its start, as a column of numbers.
     end: bool,
+    /// Whether the field holds something that was turned down, which its border shows in the
+    /// danger colour until it is cleared.
+    invalid: bool,
     /// The Fluent key of the muted unit drawn after the text inside the field.
     suffix: Option<SharedString>,
     /// The keystroke that focuses the field, drawn as keys at its end while it is empty.
@@ -281,6 +284,7 @@ impl Input {
             clearable: false,
             masked: false,
             end: false,
+            invalid: false,
             suffix: None,
             shortcut: None,
             content: SharedString::default(),
@@ -372,6 +376,14 @@ impl Input {
     pub fn set_hint(&mut self, hint: impl Into<SharedString>, cx: &mut Context<Self>) {
         self.hint = hint.into();
         cx.notify();
+    }
+
+    /// Marks the field as holding something that was turned down, or clears the mark.
+    pub fn set_invalid(&mut self, invalid: bool, cx: &mut Context<Self>) {
+        if self.invalid != invalid {
+            self.invalid = invalid;
+            cx.notify();
+        }
     }
 
     /// Draws the content as dots, or stops. Offsets stay content offsets either way, so the

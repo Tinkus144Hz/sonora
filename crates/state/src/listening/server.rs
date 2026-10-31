@@ -7,7 +7,7 @@ use anyhow::{Context as _, Result, bail};
 use reqwest::Url;
 
 /// The official server.
-pub(crate) const OFFICIAL: &str = "wss://sonora-session.nolight.dev/ws";
+pub(crate) const OFFICIAL: &str = "wss://sessions.sonorahq.org/ws";
 /// Points the app at another server whatever the settings say, as one run locally while working
 /// on it.
 pub(crate) const VARIABLE: &str = "SONORA_SESSION_SERVER";

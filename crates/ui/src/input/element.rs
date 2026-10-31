@@ -369,7 +369,12 @@ impl Render for Input {
             .when_else(
                 self.tucked,
                 |this| this.w_full(),
-                |this| this.border_1().border_color(theme.border),
+                |this| {
+                    this.border_1().border_color(match self.invalid {
+                        true => theme.danger,
+                        false => theme.border,
+                    })
+                },
             )
             .overflow_hidden()
             .key_context(INPUT_CONTEXT)

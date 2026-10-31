@@ -383,13 +383,20 @@ impl SettingsView {
         })
         .detach();
 
-        // the Save button stands held while the server it saves is checked
-        let listening = Sonora::global(cx).listening.clone();
-        cx.observe(&listening, |_, _, cx| cx.notify()).detach();
         let sessions_server =
             cx.new(|cx| Input::new("settings-sessions-server-hint", cx).compact());
         let typed = settings.read(cx).sessions_server().to_owned();
         sessions_server.update(cx, |input, cx| input.set_text(typed, cx));
+        // the Save button stands held while the server it saves is checked, and the field wears a
+        // red border from a save that was turned down until one goes through
+        let listening = Sonora::global(cx).listening.clone();
+        cx.observe(&listening, |this: &mut Self, listening, cx| {
+            let rejected = listening.read(cx).rejected();
+            this.sessions_server
+                .update(cx, |input, cx| input.set_invalid(rejected, cx));
+            cx.notify();
+        })
+        .detach();
         // what is typed is kept only once the Save button finds its server answers
         cx.observe(&sessions_server, |_, _, cx| cx.notify())
             .detach();
