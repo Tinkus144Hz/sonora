@@ -280,7 +280,6 @@ player-previous = Poprzedni utwór
 player-next = Następny utwór
 player-fullscreen = Pełny ekran
 player-fullscreen-leave = Wyjdź z trybu pełnoekranowego
-player-devices = Urządzenia
 devices-this-computer = Ten komputer
 devices-pause = Wstrzymaj
 devices-resume = Wznów

@@ -284,7 +284,6 @@ player-previous = Předchozí skladba
 player-next = Další skladba
 player-fullscreen = Celá obrazovka
 player-fullscreen-leave = Ukončit celou obrazovku
-player-devices = Zařízení
 devices-this-computer = Tento počítač
 devices-pause = Pozastavit
 devices-resume = Pokračovat

@@ -220,7 +220,6 @@ player-previous = 前の曲
 player-next = 次の曲
 player-fullscreen = フルスクリーン
 player-fullscreen-leave = フルスクリーンを終了
-player-devices = デバイス
 devices-this-computer = このコンピューター
 devices-pause = 一時停止
 devices-resume = 再開

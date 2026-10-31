@@ -60,7 +60,9 @@ pub use library::{
     Shelf, cover_problem,
 };
 pub use links::{Links, Opened};
-pub use listening::{CODE_LENGTH as SESSION_CODE_LENGTH, Listening, Member as RoomMember, Room};
+pub use listening::{
+    CODE_LENGTH as SESSION_CODE_LENGTH, Listening, Member as RoomMember, Room, ServerCheck,
+};
 pub use logging::log_file;
 pub use lyrics::{Lyrics, LyricsState};
 pub use music::connect::{Elsewhere, Repeat};
@@ -375,6 +377,7 @@ pub fn init(
             playback.clone(),
             queue.clone(),
             session.clone(),
+            settings.clone(),
             io.clone(),
             cx,
         )

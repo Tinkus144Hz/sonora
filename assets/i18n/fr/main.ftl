@@ -265,7 +265,6 @@ player-previous = Titre précédent
 player-next = Titre suivant
 player-fullscreen = Plein écran
 player-fullscreen-leave = Quitter le plein écran
-player-devices = Appareils
 devices-this-computer = Cet ordinateur
 devices-pause = Pause
 devices-resume = Reprendre

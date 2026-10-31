@@ -262,7 +262,6 @@ player-previous = Vorheriger Titel
 player-next = Nächster Titel
 player-fullscreen = Vollbild
 player-fullscreen-leave = Vollbild verlassen
-player-devices = Geräte
 devices-this-computer = Dieser Computer
 devices-pause = Pause
 devices-resume = Fortsetzen

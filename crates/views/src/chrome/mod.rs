@@ -1,11 +1,11 @@
 mod aside;
-mod devices;
 mod jam;
 mod members;
 mod notice;
 mod output_picker;
 mod player_bar;
 mod session;
+mod sessions_button;
 mod sidebar_left;
 mod sidebar_right;
 mod theme_invite;

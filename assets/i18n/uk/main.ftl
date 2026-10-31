@@ -280,7 +280,6 @@ player-previous = Попередній трек
 player-next = Наступний трек
 player-fullscreen = Повноекранний режим
 player-fullscreen-leave = Вийти з повноекранного режиму
-player-devices = Пристрої
 devices-this-computer = Цей комп'ютер
 devices-pause = Пауза
 devices-resume = Продовжити

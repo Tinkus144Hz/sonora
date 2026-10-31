@@ -4,6 +4,7 @@
 //! signed in to the provider the session was started on, and local files are never shared.
 
 mod link;
+mod server;
 mod wire;
 
 use std::collections::VecDeque;
@@ -13,16 +14,17 @@ use gpui::{App, Context, Entity, Task};
 use music::Track;
 use tokio::sync::mpsc::UnboundedReceiver;
 
+pub use server::ServerCheck;
 pub use wire::Member;
 
-use crate::{Io, Outcome, Playback, Queue, Session, SessionEvent, SessionState, Toasts};
+use crate::{
+    AppSettings, Io, Outcome, Playback, Queue, Session, SessionEvent, SessionState, Toasts,
+};
 use link::{Heard, Link};
 use wire::{Reason, Reply, Request, Shared, VERSION};
 
-/// Where the session server listens. `SONORA_SESSION_SERVER` points the app at another one, as a
-/// server run locally while working on it.
-const SERVER: &str = "wss://sonora-session.nolight.dev/ws";
-const SERVER_VARIABLE: &str = "SONORA_SESSION_SERVER";
+/// How long the address of the listener's own server has to stay unchanged before it is checked.
+const SETTLE: Duration = Duration::from_millis(600);
 /// How many digits a session code has.
 pub const CODE_LENGTH: usize = 6;
 /// How many upcoming tracks are shared. The server keeps no more than this either.
@@ -108,6 +110,12 @@ pub struct Listening {
     checking: Option<Task<()>>,
     code_shown: bool,
     join_shown: bool,
+    settings: Entity<AppSettings>,
+    http: reqwest::Client,
+    /// What the last check of the listener's own server found, and the address it checked.
+    probe: ServerCheck,
+    probed: Option<String>,
+    probing: Option<Task<()>>,
 }
 
 impl Listening {
@@ -115,15 +123,18 @@ impl Listening {
         playback: Entity<Playback>,
         queue: Entity<Queue>,
         session: Entity<Session>,
+        settings: Entity<AppSettings>,
         io: Io,
         cx: &mut Context<Self>,
     ) -> Self {
+        cx.observe(&settings, |this, _, cx| this.probe_server(cx))
+            .detach();
         cx.observe(&playback, |this, _, cx| this.publish(cx))
             .detach();
         cx.observe(&queue, |this, _, cx| this.publish(cx)).detach();
         cx.subscribe(&session, |this, _, event, cx| this.on_session(event, cx))
             .detach();
-        Self {
+        let mut listening = Self {
             playback,
             queue,
             session,
@@ -144,7 +155,14 @@ impl Listening {
             checking: None,
             code_shown: false,
             join_shown: false,
-        }
+            settings,
+            http: reqwest::Client::new(),
+            probe: ServerCheck::Idle,
+            probed: None,
+            probing: None,
+        };
+        listening.probe_server(cx);
+        listening
     }
 
     /// Whether a session can be started or joined: a streaming provider is signed in.
@@ -293,8 +311,71 @@ impl Listening {
         }
     }
 
+    /// What the last check of the listener's own server found.
+    pub fn server_check(&self) -> &ServerCheck {
+        &self.probe
+    }
+
+    /// The server sessions go through: the one `SONORA_SESSION_SERVER` names, else the
+    /// listener's own when they turned the official one off and gave an address that reads,
+    /// else the official one.
+    fn server(&self, cx: &App) -> String {
+        if let Ok(forced) = std::env::var(server::VARIABLE) {
+            return forced;
+        }
+        let settings = self.settings.read(cx);
+        if settings.sessions_official() {
+            return server::OFFICIAL.to_owned();
+        }
+        server::socket(settings.sessions_server())
+            .map_or_else(|| server::OFFICIAL.to_owned(), |url| url.to_string())
+    }
+
+    /// Checks the listener's own server once its address has stopped changing, and forgets the
+    /// last check while the official server is in use.
+    fn probe_server(&mut self, cx: &mut Context<Self>) {
+        let settings = self.settings.read(cx);
+        let typed = (!settings.sessions_official()).then(|| settings.sessions_server().trim());
+        let typed = typed.filter(|typed| !typed.is_empty()).map(str::to_owned);
+        if typed == self.probed {
+            return;
+        }
+        self.probed = typed.clone();
+        let Some(typed) = typed else {
+            self.probing = None;
+            self.probe = ServerCheck::Idle;
+            return cx.notify();
+        };
+        let Some(socket) = server::socket(&typed) else {
+            self.probing = None;
+            self.probe = ServerCheck::Malformed;
+            return cx.notify();
+        };
+        self.probe = ServerCheck::Checking;
+        cx.notify();
+        let http = self.http.clone();
+        let io = self.io.clone();
+        self.probing = Some(cx.spawn(async move |this, cx| {
+            cx.background_executor().timer(SETTLE).await;
+            let found = io.spawn(server::check(http, socket.clone())).await;
+            this.update(cx, |this, cx| {
+                this.probing = None;
+                this.probe = match found {
+                    Ok(Ok(())) => ServerCheck::Answers,
+                    Ok(Err(error)) => {
+                        log::info!("listening: {socket} did not pass its health check: {error:#}");
+                        ServerCheck::Silent
+                    }
+                    Err(_) => ServerCheck::Silent,
+                };
+                cx.notify();
+            })
+            .ok();
+        }));
+    }
+
     fn connect(&mut self, first: Request, cx: &mut Context<Self>) {
-        let url = std::env::var(SERVER_VARIABLE).unwrap_or_else(|_| SERVER.to_owned());
+        let url = self.server(cx);
         let (link, heard) = Link::open(&self.io, url, first);
         self.link = Some(link);
         self.asking = true;

@@ -262,7 +262,6 @@ player-previous = Brano precedente
 player-next = Brano successivo
 player-fullscreen = Schermo intero
 player-fullscreen-leave = Esci dallo schermo intero
-player-devices = Dispositivi
 devices-this-computer = Questo computer
 devices-pause = Pausa
 devices-resume = Riprendi

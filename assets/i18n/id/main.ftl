@@ -262,7 +262,6 @@ player-previous = Lagu sebelumnya
 player-next = Lagu berikutnya
 player-fullscreen = Layar penuh
 player-fullscreen-leave = Keluar dari layar penuh
-player-devices = Perangkat
 devices-this-computer = Komputer ini
 devices-pause = Jeda
 devices-resume = Lanjutkan

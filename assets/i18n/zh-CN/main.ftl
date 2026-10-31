@@ -262,7 +262,6 @@ player-previous = 上一首
 player-next = 下一首
 player-fullscreen = 全屏
 player-fullscreen-leave = 退出全屏
-player-devices = 设备
 devices-this-computer = 此电脑
 devices-pause = 暂停
 devices-resume = 继续播放

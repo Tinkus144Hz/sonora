@@ -18,7 +18,7 @@ use ui::{
     ScrubberState, clock, tabular,
 };
 
-use crate::chrome::devices::DevicePicker;
+use crate::chrome::sessions_button::SessionsButton;
 use crate::chrome::{Chrome, SidebarRight};
 use crate::shared::menus::ItemMenu;
 use crate::shared::transport::{NOTCH, fraction, like, moved, percent, transport, volume_icon};
@@ -33,7 +33,7 @@ pub(crate) struct PlayerBar {
     playback: Entity<Playback>,
     settings: Entity<AppSettings>,
     track_menu: ItemMenu,
-    devices: Entity<DevicePicker>,
+    sessions: Entity<SessionsButton>,
     context_menu: Option<(music::Track, Point<Pixels>)>,
     seek: ScrubberState,
     volume: ScrubberState,
@@ -57,13 +57,13 @@ impl PlayerBar {
 
         let me = cx.entity_id();
         let playlist_scrollbar = cx.new(|_| Scrollbar::inset().watching(me));
-        let picker = cx.new(DevicePicker::new);
+        let sessions = cx.new(SessionsButton::new);
 
         Self {
             playback,
             settings,
             track_menu: ItemMenu::new(playlist_scrollbar, cx),
-            devices: picker,
+            sessions,
             context_menu: None,
             seek: ScrubberState::new("seek"),
             volume: ScrubberState::new("volume"),
@@ -492,16 +492,17 @@ impl Render for PlayerBar {
             true => Some(self.side_buttons(cx)),
             false => None,
         };
-        // the devices button stands with the panel buttons, one gap apart like them, and takes no
-        // gap of its own while it draws nothing
-        let picker = Sonora::global(cx).devices.read(cx).available()
-            || Sonora::global(cx).listening.read(cx).available(cx);
+        // the Sessions button stands with the panel buttons, one gap apart like them, and takes no
+        // gap of its own while it draws nothing or the listener hid it
+        let picker = self.settings.read(cx).sessions_button()
+            && (Sonora::global(cx).devices.read(cx).available()
+                || Sonora::global(cx).listening.read(cx).available(cx));
         let buttons = div()
             .flex()
             .flex_none()
             .items_center()
             .gap_1()
-            .when(picker, |this| this.child(self.devices.clone()))
+            .when(picker, |this| this.child(self.sessions.clone()))
             .children(sides);
 
         let playback = self.playback.read(cx);

@@ -262,7 +262,6 @@ player-previous = Faixa anterior
 player-next = Próxima faixa
 player-fullscreen = Tela cheia
 player-fullscreen-leave = Sair da tela cheia
-player-devices = Dispositivos
 devices-this-computer = Este computador
 devices-pause = Pausar
 devices-resume = Retomar

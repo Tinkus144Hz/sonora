@@ -13,10 +13,11 @@ use crate::chrome::members::gathered;
 const MEMBER_FACES: usize = 3;
 const MEMBER_FACE: f32 = 0.7;
 
-/// The player bar's button for listening elsewhere and together: the account's other devices and
-/// the Jam when the provider has a device network the listener keeps on, and Sonora Session on
-/// every streaming provider. It draws nothing while no streaming provider is signed in.
-pub(crate) struct DevicePicker {
+/// The player bar's Sessions button, for listening elsewhere and together: the account's other
+/// devices and the Jam when the provider has a device network the listener keeps on, and Sonora
+/// Sessions on every streaming provider. It draws nothing while no streaming provider is signed
+/// in.
+pub(crate) struct SessionsButton {
     devices: Entity<Devices>,
     listening: Entity<Listening>,
     popovers: Popovers,
@@ -24,7 +25,7 @@ pub(crate) struct DevicePicker {
     jams: SubmenuState,
 }
 
-impl DevicePicker {
+impl SessionsButton {
     pub fn new(cx: &mut Context<Self>) -> Self {
         let devices = Sonora::global(cx).devices.clone();
         let listening = Sonora::global(cx).listening.clone();
@@ -242,7 +243,7 @@ impl DevicePicker {
     }
 }
 
-impl Render for DevicePicker {
+impl Render for SessionsButton {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let state = self.devices.read(cx);
         let connect = state.available();
@@ -269,11 +270,8 @@ impl Render for DevicePicker {
         // an accent dot over the icon says a session or a Jam is under way
         let gathered = together || state.jam().is_some_and(|_| connect);
 
-        Picker::icon("devices", &self.popovers, "icons/monitor-speaker.svg")
-            .tooltip_above(match connect {
-                true => "player-devices",
-                false => "player-listen-together",
-            })
+        Picker::icon("sessions", &self.popovers, "icons/monitor-speaker.svg")
+            .tooltip_above("player-sessions")
             .selected(elsewhere.is_some())
             .tint(match elsewhere.is_some() || gathered {
                 true => theme.foreground,

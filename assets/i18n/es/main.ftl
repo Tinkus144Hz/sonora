@@ -262,7 +262,6 @@ player-previous = Pista anterior
 player-next = Pista siguiente
 player-fullscreen = Pantalla completa
 player-fullscreen-leave = Salir de pantalla completa
-player-devices = Dispositivos
 devices-this-computer = Este equipo
 devices-pause = Pausar
 devices-resume = Reanudar

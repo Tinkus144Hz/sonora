@@ -262,7 +262,6 @@ player-previous = Kënga e mëparshme
 player-next = Kënga e radhës
 player-fullscreen = Ekran i plotë
 player-fullscreen-leave = Dil nga ekrani i plotë
-player-devices = Pajisjet
 devices-this-computer = Ky kompjuter
 devices-pause = Pauzë
 devices-resume = Vazhdo

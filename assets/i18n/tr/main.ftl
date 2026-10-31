@@ -242,7 +242,6 @@ player-previous = Önceki parça
 player-next = Sonraki parça
 player-fullscreen = Tam ekran
 player-fullscreen-leave = Tam ekrandan çık
-player-devices = Cihazlar
 devices-this-computer = Bu bilgisayar
 devices-pause = Duraklat
 devices-resume = Sürdür
