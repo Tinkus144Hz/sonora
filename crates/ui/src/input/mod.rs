@@ -260,6 +260,9 @@ pub struct Input {
     marked_range: Option<Range<usize>>,
     last_layout: Option<ShapedLine>,
     last_bounds: Option<Bounds<Pixels>>,
+    /// How far the text is scrolled left under the field, so the caret stays in sight when the
+    /// text is wider than the field.
+    scroll: Pixels,
     selecting: bool,
     selected_word: Option<Range<usize>>,
     context_menu: Option<Point<Pixels>>,
@@ -286,6 +289,7 @@ impl Input {
             marked_range: None,
             last_layout: None,
             last_bounds: None,
+            scroll: Pixels::ZERO,
             selecting: false,
             selected_word: None,
             context_menu: None,
@@ -890,7 +894,7 @@ impl EntityInputHandler for Input {
         Some(span(
             line,
             at(range.start)..at(range.end),
-            bounds.left(),
+            bounds.left() - self.scroll,
             bounds,
         ))
     }

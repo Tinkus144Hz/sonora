@@ -127,14 +127,12 @@ impl Listening {
         io: Io,
         cx: &mut Context<Self>,
     ) -> Self {
-        cx.observe(&settings, |this, _, cx| this.probe_server(cx))
-            .detach();
         cx.observe(&playback, |this, _, cx| this.publish(cx))
             .detach();
         cx.observe(&queue, |this, _, cx| this.publish(cx)).detach();
         cx.subscribe(&session, |this, _, event, cx| this.on_session(event, cx))
             .detach();
-        let mut listening = Self {
+        Self {
             playback,
             queue,
             session,
@@ -160,9 +158,7 @@ impl Listening {
             probe: ServerCheck::Idle,
             probed: None,
             probing: None,
-        };
-        listening.probe_server(cx);
-        listening
+        }
     }
 
     /// Whether a session can be started or joined: a streaming provider is signed in.
@@ -331,12 +327,17 @@ impl Listening {
             .map_or_else(|| server::OFFICIAL.to_owned(), |url| url.to_string())
     }
 
-    /// Checks the listener's own server once its address has stopped changing, and forgets the
-    /// last check while the official server is in use.
-    fn probe_server(&mut self, cx: &mut Context<Self>) {
-        let settings = self.settings.read(cx);
-        let typed = (!settings.sessions_official()).then(|| settings.sessions_server().trim());
-        let typed = typed.filter(|typed| !typed.is_empty()).map(str::to_owned);
+    /// The address the last check was for, as typed and trimmed.
+    pub fn checked(&self) -> Option<&str> {
+        self.probed.as_deref()
+    }
+
+    /// Checks the server at `typed` once the address has stopped changing for a moment, as the
+    /// listener types it. An empty address forgets the last check.
+    pub fn check_server(&mut self, typed: &str, cx: &mut Context<Self>) {
+        let typed = Some(typed.trim())
+            .filter(|typed| !typed.is_empty())
+            .map(str::to_owned);
         if typed == self.probed {
             return;
         }

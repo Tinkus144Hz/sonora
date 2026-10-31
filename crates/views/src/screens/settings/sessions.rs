@@ -1,10 +1,13 @@
 use gpui::prelude::*;
 use gpui::{AnyElement, App, Context, div};
 use i18n::t;
-use state::{ServerCheck, Sonora};
-use ui::{Picker, Switch};
+use state::{Outcome, ServerCheck, Sonora, Toasts};
+use ui::{ActiveTheme as _, Button, Picker, Switch};
 
-use super::{Group, Row, SettingsView, Slot};
+use super::{Group, SettingsView, Slot};
+
+/// How much wider than a wide picker the address field stands, so a whole address fits.
+const FIELD: f32 = 1.25;
 
 impl SettingsView {
     /// The Sessions group: whether the player bar shows the Sessions button, and which server
@@ -39,7 +42,7 @@ impl SettingsView {
 
     pub(super) fn sessions_official_row(&self, cx: &mut Context<Self>) -> AnyElement {
         let on = self.settings.read(cx).sessions_official();
-        Row::new(
+        self.row(
             t!("settings-sessions-official"),
             Switch::new("sessions-official", on)
                 .name(t!("settings-sessions-official"))
@@ -55,27 +58,54 @@ impl SettingsView {
                 }))
                 .into_any_element(),
         )
-        .detail(t!("settings-sessions-official-detail"))
-        .into_any_element()
     }
 
-    /// The address of the listener's own server, with what its health check found under it.
+    /// The address of the listener's own server and the button that saves it. Saving takes only
+    /// an address whose server answered its health check, and the button's tooltip says why
+    /// one does not.
     pub(super) fn sessions_server_row(&self, cx: &mut Context<Self>) -> AnyElement {
-        let detail = match Sonora::global(cx).listening.read(cx).server_check() {
-            ServerCheck::Idle => t!("settings-sessions-server-detail"),
-            ServerCheck::Checking => t!("settings-sessions-server-checking"),
-            ServerCheck::Answers => t!("settings-sessions-server-answers"),
-            ServerCheck::Malformed => t!("settings-sessions-server-malformed"),
-            ServerCheck::Silent => t!("settings-sessions-server-silent"),
+        let typed = self.sessions_server.read(cx).text().trim().to_owned();
+        let saved = self.settings.read(cx).sessions_server().trim() == typed;
+        let listening = Sonora::global(cx).listening.read(cx);
+        let answers = listening.checked() == Some(typed.as_str())
+            && *listening.server_check() == ServerCheck::Answers;
+        let hint = match listening.server_check() {
+            _ if typed.is_empty() => "settings-sessions-save-empty",
+            ServerCheck::Answers if saved => "settings-sessions-save-saved",
+            ServerCheck::Answers => "settings-sessions-server-answers",
+            ServerCheck::Idle | ServerCheck::Checking => "settings-sessions-server-checking",
+            ServerCheck::Malformed => "settings-sessions-server-malformed",
+            ServerCheck::Silent => "settings-sessions-server-silent",
         };
-        Row::new(
+
+        self.row(
             t!("settings-sessions-server"),
             div()
-                .w(Picker::WIDE)
-                .child(self.sessions_server.clone())
+                .flex()
+                .items_center()
+                .gap_2()
+                .child(
+                    div()
+                        .w(Picker::WIDE * FIELD)
+                        .child(self.sessions_server.clone()),
+                )
+                .child(
+                    Button::new("sessions-server-save")
+                        .secondary()
+                        .h(cx.theme().metrics.field)
+                        .label(t!("settings-sessions-save"))
+                        .tooltip(hint)
+                        .on_click(cx.listener(move |this, _, _, cx| {
+                            if !answers || saved {
+                                return;
+                            }
+                            let typed = typed.clone();
+                            this.settings
+                                .update(cx, |settings, cx| settings.set_sessions_server(typed, cx));
+                            Toasts::show(Outcome::Done, "toast-sessions-server-saved", cx);
+                        })),
+                )
                 .into_any_element(),
         )
-        .detail(detail)
-        .into_any_element()
     }
 }

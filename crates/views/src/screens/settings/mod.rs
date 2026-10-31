@@ -389,11 +389,16 @@ impl SettingsView {
         let sessions_server =
             cx.new(|cx| Input::new("settings-sessions-server-hint", cx).compact());
         let typed = settings.read(cx).sessions_server().to_owned();
-        sessions_server.update(cx, |input, cx| input.set_text(typed, cx));
-        cx.observe(&sessions_server, |this, input, cx| {
+        sessions_server.update(cx, |input, cx| input.set_text(typed.clone(), cx));
+        // what is typed is only checked, and kept once the Save button finds its server answers
+        listening.update(cx, |listening, cx| listening.check_server(&typed, cx));
+        cx.observe(&sessions_server, |_, input, cx| {
             let text = input.read(cx).text().to_owned();
-            this.settings
-                .update(cx, |settings, cx| settings.set_sessions_server(text, cx));
+            Sonora::global(cx)
+                .listening
+                .clone()
+                .update(cx, |listening, cx| listening.check_server(&text, cx));
+            cx.notify();
         })
         .detach();
 
@@ -879,18 +884,9 @@ impl SettingsView {
                 t!("settings-spotify-connect-custom"),
                 t!("settings-spotify-connect-custom-detail"),
             ),
-            Slot::SessionsButton => (
-                t!("settings-sessions-button"),
-                t!("settings-sessions-button-detail"),
-            ),
-            Slot::SessionsOfficial => (
-                t!("settings-sessions-official"),
-                t!("settings-sessions-official-detail"),
-            ),
-            Slot::SessionsServer => (
-                t!("settings-sessions-server"),
-                t!("settings-sessions-server-detail"),
-            ),
+            Slot::SessionsButton => (t!("settings-sessions-button"), SharedString::default()),
+            Slot::SessionsOfficial => (t!("settings-sessions-official"), SharedString::default()),
+            Slot::SessionsServer => (t!("settings-sessions-server"), SharedString::default()),
             Slot::Discord => (t!("settings-discord"), t!("settings-discord-detail")),
             Slot::DiscordName => (
                 t!("settings-discord-name"),
