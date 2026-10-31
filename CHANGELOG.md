@@ -14,6 +14,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - The header of an album, playlist or artist page no longer jumps when it finishes loading.
+- The column header of an artist's popular songs no longer leaves a thin gap above it while scrolling.
 
 ## [0.46.0] - 2026-10-31
 
