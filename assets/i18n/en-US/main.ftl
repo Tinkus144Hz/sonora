@@ -1341,6 +1341,7 @@ toast-session-failed = The Session could not be started or joined.
 toast-session-lost = Lost the connection to the Session
 toast-session-ended = Session ended
 toast-session-left = You left the Session
+toast-session-kicked = The host removed you from the Session
 toast-session-code-copied = Code copied
 nav-nothing-pinned = Nothing here
 nav-pins-alphabetical = Alphabetical

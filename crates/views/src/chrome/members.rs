@@ -72,14 +72,13 @@ impl Members {
         match gathering {
             Gathering::Session { code, hosting, .. } => {
                 let listening = self.listening.clone();
-                let spoken = session::spaced(&code);
                 vec![
                     Button::new("members-code")
                         .ghost()
                         .small()
                         .icon("icons/copy.svg")
-                        .label(spoken)
-                        .tooltip("devices-session-copy")
+                        // the code itself stays off screen, where anyone looking could read it
+                        .label(t!("devices-session-copy"))
                         .on_click(move |_, _, cx| session::copy_code(&code, cx)),
                     Button::new("members-leave")
                         .ghost()
@@ -167,13 +166,20 @@ impl Render for Members {
             Gathering::Session { .. } => t!("devices-session-people", count = count),
             Gathering::Jam { .. } => t!("devices-jam-people", count = count),
         };
-        let removable = matches!(gathering, Gathering::Jam { owner: true, .. });
+        // whoever started the session or the Jam may send anyone else out of it
+        let removable = matches!(
+            gathering,
+            Gathering::Session { hosting: true, .. } | Gathering::Jam { owner: true, .. }
+        );
+        let session = matches!(gathering, Gathering::Session { .. });
         let actions = self.actions(gathering);
 
         let devices = self.devices.clone();
+        let listening = self.listening.clone();
         let rows = people.iter().enumerate().map(|(index, member)| {
             let id = member.id.clone();
             let devices = devices.clone();
+            let listening = listening.clone();
             div()
                 .id(SharedString::from(format!("member-{}", member.id)))
                 .role(Role::ListItem)
@@ -215,7 +221,10 @@ impl Render for Members {
                             .small()
                             .name(t!("devices-jam-remove-member", name = jam::name(member)))
                             .label(t!("devices-jam-remove"))
-                            .on_click(move |_, _, cx| devices.read(cx).kick(&id)),
+                            .on_click(move |_, _, cx| match session {
+                                true => listening.read(cx).kick(&id),
+                                false => devices.read(cx).kick(&id),
+                            }),
                     )
                 })
         });

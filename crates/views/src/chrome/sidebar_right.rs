@@ -108,6 +108,15 @@ impl SidebarRight {
         cx.notify();
     }
 
+    /// Shows `tab`, and leaves the sidebar open when it already shows it, where `show` would
+    /// close it.
+    pub(crate) fn reveal(&mut self, tab: SideTab, cx: &mut Context<Self>) {
+        if self.open && self.tab == tab {
+            return;
+        }
+        self.show(tab, cx);
+    }
+
     pub(crate) fn close(&mut self, cx: &mut Context<Self>) {
         self.aside.update(cx, |aside, cx| aside.dismiss(cx));
         self.open = false;

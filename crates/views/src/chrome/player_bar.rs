@@ -11,7 +11,7 @@ use gpui::{
 };
 use gpui::{Window, div, px};
 use i18n::t;
-use input::{ToggleFullscreen, ToggleLyrics, ToggleMembers, ToggleQueue};
+use input::{ShowMembers, ToggleFullscreen, ToggleLyrics, ToggleQueue};
 use state::{AppSettings, Playback, PlayerBarLayout, Queue, SideTab, Sonora};
 use ui::{
     Artwork, Button, ExplicitBadge, InlineLink, InlineLinks, Popup, Room, Scrollbar, Scrubber,
@@ -19,8 +19,6 @@ use ui::{
 };
 
 use crate::chrome::devices::DevicePicker;
-use crate::chrome::jam;
-use crate::chrome::members::gathered;
 use crate::chrome::{Chrome, SidebarRight};
 use crate::shared::menus::ItemMenu;
 use crate::shared::transport::{NOTCH, fraction, like, moved, percent, transport, volume_icon};
@@ -30,9 +28,6 @@ const VOLUME_WIDTH: f32 = 110.;
 const VOLUME_TIGHT: f32 = 72.;
 const CLOCK_SHORT: f32 = 3.4;
 const CLOCK_LONG: f32 = 5.4;
-/// How many faces the Members button wears, and how much of a small control each one fills.
-const MEMBER_FACES: usize = 3;
-const MEMBER_FACE: f32 = 0.7;
 
 pub(crate) struct PlayerBar {
     playback: Entity<Playback>,
@@ -56,8 +51,6 @@ impl PlayerBar {
         let devices = Sonora::global(cx).devices.clone();
         cx.observe(&playback, |_, _, cx| cx.notify()).detach();
         cx.observe(&devices, |_, _, cx| cx.notify()).detach();
-        let listening = Sonora::global(cx).listening.clone();
-        cx.observe(&listening, |_, _, cx| cx.notify()).detach();
         cx.observe(&queue, |_, _, cx| cx.notify()).detach();
         cx.observe(&library, |_, _, cx| cx.notify()).detach();
         cx.observe(&settings, |_, _, cx| cx.notify()).detach();
@@ -209,67 +202,50 @@ impl PlayerBar {
             )
     }
 
-    /// The buttons that open the right sidebar on a panel. Members shows only while the
-    /// listener is in a Sonora Session or a Jam, and wears the first faces of the people in it.
-    fn side_buttons(&mut self, window: &Window, cx: &mut Context<Self>) -> AnyElement {
+    fn side_buttons(&mut self, cx: &mut Context<Self>) -> AnyElement {
         let theme = *cx.theme();
         let (open, tab) = {
             let settings = self.settings.read(cx);
             (settings.sidebar_right_open(), settings.sidebar_right_tab())
         };
 
-        let button =
-            move |id: &'static str, icon: Option<&'static str>, hint: &'static str, side| {
-                let showing = open && tab == side;
+        let button = move |id: &'static str, icon: &'static str, hint: &'static str, side| {
+            let showing = open && tab == side;
 
-                Button::new(id)
-                    .ghost()
-                    .small()
-                    .when_some(icon, Button::icon)
-                    .tooltip_above(hint)
-                    .selected(showing)
-                    .tint(match showing {
-                        true => theme.foreground,
-                        false => theme.muted_foreground,
-                    })
-                    .on_click(move |_, window, cx| {
-                        let action: Box<dyn gpui::Action> = match side {
-                            SideTab::Queue => Box::new(ToggleQueue),
-                            SideTab::Lyrics => Box::new(ToggleLyrics),
-                            SideTab::Members => Box::new(ToggleMembers),
-                        };
-                        window.dispatch_action(action, cx);
-                    })
-            };
-
-        let people = gathered(cx);
-        let members = (!people.is_empty()).then(|| {
-            let faces = jam::faces(
-                &people,
-                MEMBER_FACES,
-                theme.metrics.control_small * MEMBER_FACE,
-                0.,
-                window,
-                theme,
-            );
-            button("player-members", None, "members-title", SideTab::Members).leading(faces)
-        });
+            Button::new(id)
+                .ghost()
+                .small()
+                .icon(icon)
+                .tooltip_above(hint)
+                .selected(showing)
+                .tint(match showing {
+                    true => theme.foreground,
+                    false => theme.muted_foreground,
+                })
+                .on_click(move |_, window, cx| {
+                    let action: Box<dyn gpui::Action> = match side {
+                        SideTab::Queue => Box::new(ToggleQueue),
+                        SideTab::Lyrics => Box::new(ToggleLyrics),
+                        SideTab::Members => Box::new(ShowMembers),
+                    };
+                    window.dispatch_action(action, cx);
+                })
+        };
 
         div()
             .flex()
             .flex_none()
             .items_center()
             .gap_1()
-            .children(members)
             .child(button(
                 "player-lyrics",
-                Some("icons/mic-vocal.svg"),
+                "icons/mic-vocal.svg",
                 "lyrics-title",
                 SideTab::Lyrics,
             ))
             .child(button(
                 "player-queue",
-                Some("icons/list-music.svg"),
+                "icons/list-music.svg",
                 "queue-title",
                 SideTab::Queue,
             ))
@@ -513,7 +489,7 @@ impl Render for PlayerBar {
 
         let show_track = span.fits(Room::Snug);
         let sides = match SidebarRight::available(window) {
-            true => Some(self.side_buttons(window, cx)),
+            true => Some(self.side_buttons(cx)),
             false => None,
         };
         // the devices button stands with the panel buttons, one gap apart like them, and takes no

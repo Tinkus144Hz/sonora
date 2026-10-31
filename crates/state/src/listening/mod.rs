@@ -228,6 +228,17 @@ impl Listening {
         Toasts::show(Outcome::Done, key, cx);
     }
 
+    /// Removes the member `id` from the session this app hosts. The server ignores it from anyone
+    /// who does not host.
+    pub fn kick(&self, id: &str) {
+        let hosting = self.room.as_ref().is_some_and(Room::hosting);
+        if let (true, Some(link)) = (hosting, &self.link) {
+            link.send(Request::Kick {
+                member: id.to_owned(),
+            });
+        }
+    }
+
     /// Whether the code of the session this app is in is on show.
     pub fn code_shown(&self) -> bool {
         self.code_shown && self.room.is_some()
@@ -378,6 +389,10 @@ impl Listening {
             Reply::Ended => {
                 self.reset(cx);
                 Toasts::show(Outcome::Info, "toast-session-ended", cx);
+            }
+            Reply::Kicked => {
+                self.reset(cx);
+                Toasts::show(Outcome::Info, "toast-session-kicked", cx);
             }
             Reply::Error { reason, provider } => self.refused(reason, provider, cx),
         }

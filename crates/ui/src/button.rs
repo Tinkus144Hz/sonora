@@ -19,8 +19,8 @@ const FADED: f32 = 0.55;
 const TINT_HOVER: f32 = 0.14;
 const TINT_ACTIVE: f32 = 0.24;
 /// The status dot's diameter and its distance from the top left corner, as parts of the pad.
-const STATUS: f32 = 0.5;
-const STATUS_INSET: f32 = 0.25;
+const STATUS: f32 = 0.75;
+const STATUS_INSET: f32 = 0.4;
 /// How far a small button's label sits from its edge, which text set beside one lines up with.
 pub const SMALL_INSET: Pixels = px(8.);
 

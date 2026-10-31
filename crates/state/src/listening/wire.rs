@@ -31,6 +31,8 @@ pub(crate) enum Request {
     State { state: Box<Shared>, seq: u64 },
     /// Leaves the session, which ends it for everyone when the host leaves.
     Leave,
+    /// Removes a member from the session this client hosts.
+    Kick { member: String },
     /// Asks for the server's clock. `t` is this client's own, in milliseconds.
     Ping { t: u64 },
 }
@@ -61,6 +63,8 @@ pub(crate) enum Reply {
     },
     /// The host ended the session.
     Ended,
+    /// The host removed this client from the session.
+    Kicked,
     Error {
         reason: Reason,
         #[serde(default)]

@@ -1352,6 +1352,7 @@ toast-session-failed = Не удалось начать сессию или пр
 toast-session-lost = Связь с сессией потеряна
 toast-session-ended = Сессия завершена
 toast-session-left = Вы покинули сессию
+toast-session-kicked = Хост удалил вас из сессии
 toast-session-code-copied = Код скопирован
 nav-nothing-pinned = Здесь пусто
 nav-pins-alphabetical = По алфавиту

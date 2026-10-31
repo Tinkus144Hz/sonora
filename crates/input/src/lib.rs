@@ -26,7 +26,7 @@ actions!(
         ToggleFullscreen,
         ToggleQueue,
         ToggleLyrics,
-        ToggleMembers,
+        ShowMembers,
         CloseWindow,
         MinimizeWindow,
         ZoomWindow,

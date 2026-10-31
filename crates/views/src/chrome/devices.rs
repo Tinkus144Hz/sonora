@@ -1,11 +1,17 @@
 use gpui::prelude::*;
 use gpui::{App, ClickEvent, Context, Entity, SharedString, Window, div};
 use i18n::t;
+use input::ShowMembers;
 use music::connect::{Command, DeviceKind, Elsewhere};
 use state::{Devices, Listening, Sonora};
 use ui::{ActiveTheme as _, Menu, MenuItem, Picker, Popovers, SubmenuState};
 
-use crate::chrome::{jam, session};
+use crate::chrome::jam;
+use crate::chrome::members::gathered;
+
+/// How many faces the Members item shows, and how much of a small control each one fills.
+const MEMBER_FACES: usize = 3;
+const MEMBER_FACE: f32 = 0.7;
 
 /// The player bar's button for listening elsewhere and together: the account's other devices and
 /// the Jam when the provider has a device network the listener keeps on, and Sonora Session on
@@ -169,6 +175,30 @@ impl DevicePicker {
             )
     }
 
+    /// Opens the Members panel, with the first faces of the people in the session or Jam at the
+    /// end of the row. `None` while the listener is in neither.
+    fn members_item(&self, window: &Window, cx: &App) -> Option<MenuItem> {
+        let people = gathered(cx);
+        if people.is_empty() {
+            return None;
+        }
+        let theme = *cx.theme();
+        let faces = jam::faces(
+            &people,
+            MEMBER_FACES,
+            theme.metrics.control_small * MEMBER_FACE,
+            0.,
+            window,
+            theme,
+        );
+        Some(
+            MenuItem::new("members", t!("members-title"))
+                .icon("icons/user.svg")
+                .trailing(faces)
+                .on_click(|_, window, cx| window.dispatch_action(Box::new(ShowMembers), cx)),
+        )
+    }
+
     /// Starting or joining a Sonora Session, or what to do with the one the listener is in.
     fn session_items(&self, cx: &App) -> Vec<MenuItem> {
         let listening = self.listening.clone();
@@ -190,7 +220,6 @@ impl DevicePicker {
                     }),
             ];
         };
-        let code = room.code.clone();
         vec![
             MenuItem::new("session-code", t!("devices-session-code-menu"))
                 .icon("icons/rectangle-ellipsis.svg")
@@ -200,9 +229,6 @@ impl DevicePicker {
                         listening.update(cx, |listening, cx| listening.show_code(true, cx))
                     }
                 }),
-            MenuItem::new("session-copy", t!("devices-session-copy"))
-                .icon("icons/copy.svg")
-                .on_click(move |_, _, cx| session::copy_code(&code, cx)),
             MenuItem::new(
                 "session-leave",
                 match room.hosting() {
@@ -217,7 +243,7 @@ impl DevicePicker {
 }
 
 impl Render for DevicePicker {
-    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let state = self.devices.read(cx);
         let connect = state.available();
         let listening = self.listening.read(cx);
@@ -235,10 +261,11 @@ impl Render for DevicePicker {
         if !items.is_empty() {
             items.push(MenuItem::separator("session-separator"));
         }
-        items.extend(self.session_items(cx));
         if connect {
             items.push(self.jam_item(cx));
         }
+        items.extend(self.members_item(window, cx));
+        items.extend(self.session_items(cx));
         // an accent dot over the icon says a session or a Jam is under way
         let gathered = together || state.jam().is_some_and(|_| connect);
 
@@ -247,8 +274,8 @@ impl Render for DevicePicker {
                 true => "player-devices",
                 false => "player-listen-together",
             })
-            .selected(elsewhere.is_some() || together)
-            .tint(match elsewhere.is_some() || together {
+            .selected(elsewhere.is_some())
+            .tint(match elsewhere.is_some() || gathered {
                 true => theme.foreground,
                 false => theme.muted_foreground,
             })

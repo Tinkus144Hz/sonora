@@ -108,6 +108,12 @@ impl Workspace {
             .update(cx, |panel, cx| panel.show(tab, cx));
     }
 
+    /// Opens the right sidebar on `tab` without closing it when it already shows there.
+    pub fn reveal_side(&self, tab: SideTab, cx: &mut Context<Self>) {
+        self.sidebar_right
+            .update(cx, |panel, cx| panel.reveal(tab, cx));
+    }
+
     #[allow(dead_code)]
     pub fn content(&self) -> &AnyView {
         &self.content
