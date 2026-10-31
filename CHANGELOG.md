@@ -11,6 +11,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - A song's right-click menu groups Artist, Album, Radio and Details under one Go to submenu.
 
+### Fixed
+
+- The header of an album, playlist or artist page no longer jumps when it finishes loading.
+
 ## [0.46.0] - 2026-10-31
 
 ### Added
