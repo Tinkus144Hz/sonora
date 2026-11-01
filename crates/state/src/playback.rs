@@ -1155,9 +1155,11 @@ impl Playback {
             self.begin(tracks, 0, origin, cx);
             return None;
         }
-        // in a Jam a song the listener queues names them, as it does for everyone else
-        let you = match placement {
-            QueuePlacement::Last => None,
+        // In a Jam a song the listener queues names them, as it does for everyone else. A song
+        // the device network queues here comes from inside an update of `Devices`, which cannot
+        // be read then, and it already names whoever queued it.
+        let you = match (placement, self.local) {
+            (QueuePlacement::Last, _) | (_, true) => None,
             _ => self
                 .devices
                 .as_ref()
@@ -1165,7 +1167,7 @@ impl Playback {
                 .and_then(|devices| devices.read(cx).you()),
         };
         let tracks = tracks.into_iter().map(|mut track| {
-            if you.is_some() {
+            if track.added_by.is_none() {
                 track.added_by = you.clone();
             }
             track
