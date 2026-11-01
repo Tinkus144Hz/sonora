@@ -7,9 +7,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- An artist page shows the artist's banner behind its header, sharp at the top and blurring into
+  the page under the name. Artists without a banner get a soft wash of their photo's colours.
+
+### Changed
+
+- A song's right-click menu groups Artist, Album, Radio and Details under one Go to submenu.
+
 ### Fixed
 
-- Dragging the volume slider no longer stutters or spikes CPU and GPU use
+- The header of an album, playlist or artist page no longer jumps when it finishes loading.
+- The column header of an artist's popular songs no longer leaves a thin gap above it while scrolling.
+- Resuming after a pause no longer plays a blip of the old position first after a seek or a reload.
+- Dragging the volume slider no longer stutters or spikes CPU and GPU use.
 
 ## [0.46.0] - 2026-10-31
 
