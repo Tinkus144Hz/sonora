@@ -112,6 +112,7 @@ menu-add-tracks-to-playlist = { $count ->
    *[other] Add { $count } tracks to playlist
 }
 menu-new-playlist = New playlist
+menu-import-playlist = Import playlist…
 menu-edit-tags = Edit tags
 menu-no-playlists = No playlists
 menu-search-playlists = Search a playlist
@@ -163,8 +164,11 @@ menu-play-tracks-last = { $count ->
     [one] Play { $count } track last
    *[other] Play { $count } tracks last
 }
-menu-song-radio = Go to song radio
-menu-go-to-album = Go to album
+menu-go-to = Go to
+menu-artist = Artist
+menu-album = Album
+menu-radio = Radio
+menu-details = Details
 menu-go-to-artist = Go to artist
 menu-view-details = View details
 menu-copy-link = Copy link
@@ -173,8 +177,9 @@ menu-copy = Copy
 menu-paste = Paste
 menu-select-all = Select all
 menu-remove-from-queue = Remove from queue
-menu-rename-playlist = Rename playlist
+menu-edit-playlist = Edit playlist
 menu-delete-playlist = Delete playlist
+menu-export-playlist = Export playlist…
 menu-add-playlist-to-library = Add to Library
 menu-remove-playlist-from-library = Remove from Library
 menu-library-add = Add to Library
@@ -194,7 +199,12 @@ menu-play-artist = Play artist
 # playlist editor
 playlist-name-placeholder = Playlist name
 playlist-create-title = Create playlist
-playlist-rename-title = Rename playlist
+playlist-edit-title = Edit playlist
+playlist-cover-choose = Choose picture
+playlist-cover-remove = Remove cover
+playlist-cover-unopenable = Sonora can't open this file
+playlist-cover-too-large = This picture is larger than 40 MB
+playlist-cover-not-a-picture = This file is not a JPEG, PNG or WebP picture
 playlist-delete-title = Delete playlist
 playlist-delete-confirm = Delete “{ $name }”? This cannot be undone.
 playlist-again-title = Add it again?
@@ -439,6 +449,7 @@ release-meta = { $year } • { $kind }
 home-quick-picks = Quick picks
 home-quick-picks-empty = Like a few songs and they will show up here
 home-recently-added = Recently added
+home-recently-played = Recently played
 home-playlists = Playlists
 home-favorite-albums = Favorite albums
 home-artists = Artists
@@ -447,6 +458,9 @@ home-collection-albums = Albums from your collection
 # search page
 search-placeholder = What do you want to listen to?
 search-browse = Browse all
+search-submit = Search
+search-recent = Recent searches
+search-forget = Remove from history
 genre-empty = Nothing to show here yet
 search-best-match = Best match
 search-no-matches = No matches
@@ -1121,6 +1135,9 @@ saver-fps = { $fps } FPS
 
 toast-playlist-created = Playlist created
 toast-playlist-renamed = Playlist renamed
+toast-playlist-updated = Playlist updated
+toast-playlist-cover-changed = Playlist cover changed
+toast-playlist-cover-removed = Playlist cover removed
 toast-playlist-deleted = Playlist deleted
 toast-local-delete-failed = Some track files could not be deleted
 toast-playlist-added = Playlist added to your library
@@ -1128,10 +1145,19 @@ toast-playlist-removed = Playlist removed from your library
 toast-playlist-visibility = Playlist visibility changed
 toast-track-added = Added to { $name }
 toast-track-removed = Removed from { $name }
+toast-track-moved = Moved to { $name }
 toast-track-removed-unnamed = Removed from the playlist
 toast-playlist-failed = That change could not be saved
 toast-playlist-busy = Another change is still running
 toast-playlist-signed-out = Sign in to change playlists
+toast-playlist-imported = Imported { $name }
+toast-playlist-imported-partly = Imported { $name }, leaving out { $count ->
+        [one] one song
+       *[other] { $count } songs
+    } not in your library
+toast-playlist-import-empty = None of the songs in { $name } are in your library
+toast-playlist-exported = Playlist exported
+toast-file-dialog-failed = Could not open the file dialog
 toast-queued-track = { $name } added to the queue
 toast-next-track = { $name } plays next
 toast-last-track = { $name } plays last
