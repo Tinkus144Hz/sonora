@@ -16,6 +16,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The tray menu and taskbar buttons follow the song of the Jam or device you are listening to.
 - A song's right-click menu groups Artist, Album, Radio and Details under one Go to submenu.
 - Sorting by Date added puts the songs you added most recently first.
 
@@ -28,6 +29,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The system media controls show the length of every song, not 0 for songs whose length only
   arrives once they start playing.
 - Dragging the volume slider no longer stutters or spikes CPU and GPU use.
+- Leaving a Jam you joined works again.
+- Songs you queue in a Jam show your name as the one who added them.
+- A Jam's queue is no longer cleared when a song starts playing.
 
 ## [0.46.0] - 2026-10-31
 
