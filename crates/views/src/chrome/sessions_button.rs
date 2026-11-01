@@ -1,8 +1,8 @@
 use gpui::prelude::*;
-use gpui::{App, ClickEvent, Context, Entity, SharedString, Window, div};
+use gpui::{App, Context, Entity, SharedString, Window, div};
 use i18n::t;
 use input::ShowMembers;
-use music::connect::{Command, DeviceKind, Elsewhere};
+use music::connect::{DeviceKind, Elsewhere};
 use state::{Devices, Listening, Sonora};
 use ui::{ActiveTheme as _, Menu, MenuItem, Picker, Popovers, SubmenuState};
 
@@ -40,7 +40,7 @@ impl SessionsButton {
         }
     }
 
-    /// The account's other devices and the controls of the one that plays.
+    /// The account's other devices, with the one that plays marked.
     fn connect_items(&self, elsewhere: Option<&Elsewhere>, cx: &App) -> Vec<MenuItem> {
         let state = self.devices.read(cx);
         let devices = self.devices.clone();
@@ -68,38 +68,6 @@ impl SessionsButton {
                     let devices = devices.clone();
                     move |_, _, cx| devices.read(cx).transfer(&id)
                 }),
-            );
-        }
-
-        if let Some(elsewhere) = elsewhere {
-            let id = elsewhere.device.id.clone();
-            let control = |command: Command| {
-                let devices = devices.clone();
-                let id = id.clone();
-                move |_: &ClickEvent, _: &mut Window, cx: &mut App| {
-                    devices.read(cx).control(&id, command.clone())
-                }
-            };
-            let (toggle, label, glyph) = match elsewhere.state.playing {
-                true => (Command::Pause, t!("devices-pause"), "icons/pause.svg"),
-                false => (Command::Play, t!("devices-resume"), "icons/play.svg"),
-            };
-
-            items.push(MenuItem::separator("device-separator"));
-            items.push(
-                MenuItem::new("device-previous", t!("player-previous"))
-                    .icon("icons/skip-back.svg")
-                    .on_click(control(Command::Previous)),
-            );
-            items.push(
-                MenuItem::new("device-toggle", label)
-                    .icon(glyph)
-                    .on_click(control(toggle)),
-            );
-            items.push(
-                MenuItem::new("device-next", t!("player-next"))
-                    .icon("icons/skip-forward.svg")
-                    .on_click(control(Command::Next)),
             );
         }
 
@@ -267,17 +235,23 @@ impl Render for SessionsButton {
         }
         items.extend(self.members_item(window, cx));
         items.extend(self.session_items(cx));
-        // an accent dot over the icon says a session or a Jam is under way
-        let gathered = together || state.jam().is_some_and(|_| connect);
+        // an accent dot over the icon says a session or a Jam is under way, or that playback is on
+        // another device
+        let busy = together || state.jam().is_some_and(|_| connect) || elsewhere.is_some();
 
-        Picker::icon("sessions", &self.popovers, "icons/monitor-speaker.svg")
+        // while another device plays, the button wears that device's icon
+        let glyph = elsewhere
+            .as_ref()
+            .map_or("icons/monitor-speaker.svg", |elsewhere| {
+                icon(elsewhere.device.kind)
+            });
+        Picker::icon("sessions", &self.popovers, glyph)
             .tooltip_above("player-sessions")
-            .selected(elsewhere.is_some())
-            .tint(match elsewhere.is_some() || gathered {
+            .tint(match busy {
                 true => theme.foreground,
                 false => theme.muted_foreground,
             })
-            .when(gathered, |picker| picker.status(theme.primary))
+            .when(busy, |picker| picker.status(theme.primary))
             .width(Picker::WIDE)
             .items(items)
             .into_any_element()
