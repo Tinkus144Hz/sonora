@@ -81,6 +81,8 @@ pub(crate) enum Reason {
     Full,
     RateLimited,
     Busy,
+    /// This address already started as many live sessions as one may.
+    TooMany,
     Version,
     Invalid,
     #[serde(other)]

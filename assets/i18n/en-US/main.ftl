@@ -1341,6 +1341,7 @@ toast-session-not-found = No Session goes by that code.
 toast-session-provider = This Session plays from { $name }. Sign in to { $name } to join it.
 toast-session-full = That Session is full.
 toast-session-rate-limited = Too many wrong codes. Try again in a few minutes.
+toast-session-too-many = Your network already hosts as many Sessions as it may. End one to start another.
 toast-session-unreachable = Could not reach Sonora Session. Try again later.
 toast-session-failed = The Session could not be started or joined.
 toast-session-lost = Lost the connection to the Session

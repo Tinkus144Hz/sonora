@@ -497,6 +497,7 @@ impl Listening {
             Reason::NotFound => "toast-session-not-found",
             Reason::Full => "toast-session-full",
             Reason::RateLimited => "toast-session-rate-limited",
+            Reason::TooMany => "toast-session-too-many",
             Reason::Provider => {
                 let slug = provider.unwrap_or_default();
                 let name = self

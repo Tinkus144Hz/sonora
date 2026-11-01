@@ -1352,6 +1352,7 @@ toast-session-not-found = Сессии с таким кодом нет.
 toast-session-provider = Эта сессия играет из { $name }. Войдите в { $name }, чтобы присоединиться.
 toast-session-full = В этой сессии нет мест.
 toast-session-rate-limited = Слишком много неверных кодов. Попробуйте через несколько минут.
+toast-session-too-many = Из вашей сети уже запущено максимальное число сессий. Завершите одну, чтобы начать новую.
 toast-session-unreachable = Не удалось связаться с Sonora Session. Попробуйте позже.
 toast-session-failed = Не удалось начать сессию или присоединиться к ней.
 toast-session-lost = Связь с сессией потеряна
