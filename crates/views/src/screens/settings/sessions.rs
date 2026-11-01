@@ -6,9 +6,6 @@ use ui::{Button, Picker, Switch};
 
 use super::{Group, SettingsView, Slot};
 
-/// How much wider than a wide picker the address field stands, so a whole address fits.
-const FIELD: f32 = 1.25;
-
 impl SettingsView {
     /// The Sessions group: whether the player bar shows the Sessions button, and which server
     /// Sonora Sessions go through. The address row stands only while the official server is off.
@@ -62,24 +59,31 @@ impl SettingsView {
 
     /// The address of the listener's own server and the button that saves it. Saving checks the
     /// server first and keeps it only once it answers, and a toast says how it went. The field is
-    /// compact and the button small, so the two stand the same height.
+    /// compact and the button small, so the two stand the same height. On a narrow page the field
+    /// narrows and the label stays whole.
     pub(super) fn sessions_server_row(&self, cx: &mut Context<Self>) -> AnyElement {
         let saving = Sonora::global(cx).listening.read(cx).saving();
         let field = self.sessions_server.clone();
 
-        self.row(
+        self.yielding_row(
             t!("settings-sessions-server"),
             div()
+                .flex_1()
+                .min_w_0()
                 .flex()
                 .items_center()
+                .justify_end()
                 .gap_2()
                 .child(
                     div()
-                        .w(Picker::WIDE * FIELD)
+                        .flex_1()
+                        .min_w_0()
+                        .max_w(Picker::WIDE)
                         .child(self.sessions_server.clone()),
                 )
                 .child(
                     Button::new("sessions-server-save")
+                        .flex_none()
                         .secondary()
                         .small()
                         .label(t!("settings-sessions-save"))
