@@ -17,6 +17,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - A song's right-click menu groups Artist, Album, Radio and Details under one Go to submenu.
+- Sorting by Date added puts the songs you added most recently first.
 
 ### Fixed
 
