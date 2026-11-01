@@ -28,6 +28,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A `spotify://track/…` link opens that song, as `spotify:track:…` links already did.
 - The system media controls show the length of every song, not 0 for songs whose length only
   arrives once they start playing.
+- Dragging the volume slider no longer stutters or spikes CPU and GPU use.
 - Leaving a Jam you joined works again.
 - Songs you queue in a Jam show your name as the one who added them.
 - A Jam's queue is no longer cleared when a song starts playing.
