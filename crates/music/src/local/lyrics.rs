@@ -13,11 +13,11 @@ use super::{tags, wire};
 /// Wins a tie against most services without outranking a better kind of sheet.
 const TRUST: u32 = 100;
 
-/// Extensions a lyrics file beside the track may carry, in the order they are tried. Linux
-/// filesystems tell the cases apart.
-const SIDECARS: [&str; 4] = ["lrc", "LRC", "ttml", "TTML"];
+/// Extensions a lyrics file beside the track may carry, in the order they are tried. TTML comes
+/// first since it can time every word. Linux filesystems tell the cases apart.
+const SIDECARS: [&str; 4] = ["ttml", "TTML", "lrc", "LRC"];
 
-/// Reads the lyrics of a local file: an `.lrc` or `.ttml` file beside it, else what its own tags
+/// Reads the lyrics of a local file: a `.ttml` or `.lrc` file beside it, else what its own tags
 /// carry.
 /// Any other track gets no answer.
 pub struct LocalLyrics;
@@ -64,7 +64,7 @@ fn read(path: &Path) -> Result<Option<Lyrics>> {
     }
 }
 
-/// Lyrics from `Song.lrc` or `Song.ttml` beside `Song.flac`. A file that cannot be read or has no
+/// Lyrics from `Song.ttml` or `Song.lrc` beside `Song.flac`. A file that cannot be read or has no
 /// valid line is logged and skipped rather than failing the lookup, so the next file and then the
 /// tags still get their turn.
 fn sidecar(path: &Path) -> Option<Lyrics> {
