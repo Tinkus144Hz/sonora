@@ -621,7 +621,9 @@ impl SettingsView {
             self.lazy((page.id(), 1_usize), cx, move |this, window, cx| {
                 let previews = &this.previews;
                 match page {
-                    SettingsPage::NowPlaying => preview::now_playing::preview(this, window, cx),
+                    SettingsPage::NowPlaying => {
+                        preview::now_playing::preview(&previews.now_playing, this, window, cx)
+                    }
                     SettingsPage::Lyrics => {
                         preview::lyrics::preview(&previews.lyrics, this, window, cx)
                     }

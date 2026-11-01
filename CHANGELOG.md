@@ -17,6 +17,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the page under the name. Artists without a banner get a soft wash of their photo's colours.
 - Local songs read word-by-word lyrics from a `.ttml` file beside them or from TTML in their
   lyrics tag.
+- The Now playing preview in Appearance settings draws the visualizer style you pick.
 
 ### Changed
 
